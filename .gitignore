@@ -32,3 +32,4 @@
 *.app
 
 build
+cppbuild_win32_info.txt
