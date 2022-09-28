@@ -32,6 +32,7 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
     path_To_Project = std::filesystem::canonical(std::filesystem::current_path()).string();
 
     arch = sizeof(void *) == 8 ? X64 : X86;
+    config = RELEASE;
 
     for (int i = 1; i < argc; i++)
     {
@@ -52,6 +53,15 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
                 arch = X86;
             else if (strcmp(argv[i] + 7, "x64") == 0)
                 arch = X64;
+            else
+                error("SYNTAX ERROR: Invalid architecture. Must be \'x86\' or \'x64\'");
+        }
+        else if (strlen(argv[i]) >= 9 && memcmp(argv[i], "--config=", 9) == 0)
+        {
+            if (strcmp(argv[i] + 9, "debug") == 0)
+                config = DEBUG;
+            else if (strcmp(argv[i] + 9, "release") == 0)
+                config = RELEASE;
             else
                 error("SYNTAX ERROR: Invalid architecture. Must be \'x86\' or \'x64\'");
         }
