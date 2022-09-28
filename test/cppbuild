@@ -1,0 +1,1 @@
+output app out/${_platform}_${_arch}_${_config}/$app(test)

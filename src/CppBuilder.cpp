@@ -77,6 +77,8 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
         error("ERROR: \'cppbuild\' file not present in project");
 
     std::filesystem::current_path(path_To_Project);
+
+    proj_Info.init();
 }
 
 void CppBuilder::setup()

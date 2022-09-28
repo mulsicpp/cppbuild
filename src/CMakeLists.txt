@@ -5,4 +5,4 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 project(cppbuild)
 
-add_executable(cppbuild main.cpp CppBuilder.cpp native_commands.cpp)
+add_executable(cppbuild main.cpp CppBuilder.cpp native_commands.cpp ProjectInfo.cpp)
