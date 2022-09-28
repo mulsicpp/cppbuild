@@ -112,6 +112,8 @@ void CppBuilder::setup()
         fputs((std::string("/libpath:\"") + subfolder.path().string() + "/ucrt/x64\" ").c_str(), p_File);
     }
     fprintf(p_File, "\n");
+    fprintf(p_File, "%s/bin/Host%s/x86\n", msvc_path.string().c_str(), sizeof(void*) == 8 ? "x64" : "x86");
+    fprintf(p_File, "%s/bin/Host%s/x64\n", msvc_path.string().c_str(), sizeof(void*) == 8 ? "x64" : "x86");
 
     fclose(p_File);
 
