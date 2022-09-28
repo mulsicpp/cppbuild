@@ -75,6 +75,8 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
 
     if (!std::filesystem::exists(std::filesystem::path(path_To_Project) += "/cppbuild") || !std::filesystem::is_regular_file(std::filesystem::path(path_To_Project) += "/cppbuild"))
         error("ERROR: \'cppbuild\' file not present in project");
+
+    std::filesystem::current_path(path_To_Project);
 }
 
 void CppBuilder::setup()

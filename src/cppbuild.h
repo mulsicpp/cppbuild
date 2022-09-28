@@ -2,6 +2,33 @@
 
 #include "stdio.h"
 
+#if defined(_WIN32)
+#define OS_APP_FORMAT "$1.exe"
+#define OS_LIB_FORMAT "$1.lib"
+#define OS_DLL_FORMAT "$1.dll"
+#define OS_PLATFORM "win32"
+#define OS_INCLUDE_PATH(x) "/I" + x + " "
+#define OS_LIBRARY_PATH(x) "/LIBPATH:" + x + " "
+#define OS_LINK_LIBRARY(x) "\"" + x + ".lib\" "
+#define OS_DEFINE(x) "/D" + x + " "
+#define OS_MACRO(x, y) "/D\"" + x + "=" + y + "\" "
+#define OS_STD(x) "/std:" + x + " "
+#define OS_DIR_SEPARATOR "\\"
+
+#elif defined(__linux__)
+#define OS_APP_FORMAT "$1"
+#define OS_LIB_FORMAT "lib$1.a"
+#define OS_DLL_FORMAT "lib$1.so"
+#define OS_PLATFORM "linux"
+#define OS_INCLUDE_PATH(x) "-I" + x + " "
+#define OS_LIBRARY_PATH(x) "-L" + x + " "
+#define OS_LINK_LIBRARY(x) "-l\"" + x + "\" "
+#define OS_DEFINE(x) "-D" + x + " "
+#define OS_MACRO(x, y) "-D\"" + x + "=" + y + "\" "
+#define OS_STD(x) "-std=" + x + " "
+#define OS_DIR_SEPARATOR "/"
+#endif
+
 //colors
 #define C_RESET "\033[0m"
 

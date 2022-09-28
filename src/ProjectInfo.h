@@ -16,7 +16,7 @@ struct TranslationUnit {
     std::string o_File;
 };
 
-struct ProgramInfo {
+struct ProjectInfo {
     std::string output_Path;
     OutputType output_Type;
 
@@ -33,4 +33,8 @@ struct ProgramInfo {
     std::unordered_map<std::string, std::vector<std::string>> header_Dependencies;
 
     std::vector<std::string> dependencies;
+
+    void init(Architecture arch, Config config);
+private:
+    std::string resolve_Line(std::string line);
 };
