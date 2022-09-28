@@ -2,6 +2,7 @@
 
 #include <string>
 #include "cppbuild.h"
+#include "ProjectInfo.h"
 
 struct CppBuilder {
     std::string path_To_Exe, path_To_Project;
@@ -10,9 +11,7 @@ struct CppBuilder {
 
     bool run, force;
 
-    Config config;
-
-    Architecture arch;
+    ProjectInfo proj_Info;
 
     CppBuilder(int argc, char* argv[]);
 

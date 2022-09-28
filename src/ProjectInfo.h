@@ -20,6 +20,9 @@ struct ProjectInfo {
     std::string output_Path;
     OutputType output_Type;
 
+    Config config;
+    Architecture arch;
+
     std::string cpp_Standard;
     std::string additional_Include_Paths;
     std::string additional_Lib_Paths;
@@ -34,7 +37,7 @@ struct ProjectInfo {
 
     std::vector<std::string> dependencies;
 
-    void init(Architecture arch, Config config);
+    void init(void);
 private:
     std::string resolve_Line(std::string line);
 };

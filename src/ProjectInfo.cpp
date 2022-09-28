@@ -7,7 +7,7 @@ const static std::regex APP_FUNC_REG("%app\\(([^\\(\\)\\[\\]]*)\\)");
 const static std::regex LIB_FUNC_REG("%lib\\(([^\\(\\)\\[\\]]*)\\)");
 const static std::regex DLL_FUNC_REG("%dll\\(([^\\(\\)\\[\\]]*)\\)");
 
-void ProjectInfo::init(Architecture arch, Config config)
+void ProjectInfo::init(void)
 {
     // set build constants
 #if defined(_WIN32)
