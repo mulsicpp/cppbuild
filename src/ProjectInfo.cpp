@@ -49,7 +49,6 @@ void ProjectInfo::init(void)
             trim(line);
             if (line.at(0) == '#')
                 continue;
-            printf("%s\n", line.c_str());
             try
             {
                 line = resolve_Line(line);
@@ -62,9 +61,7 @@ void ProjectInfo::init(void)
             strcpy(line_cstr, line.c_str());
 
             format_Line(&argc, argv, line_cstr);
-            printf("%i\n", argc);
-            for(int i = 0; i < argc; i++)
-                printf("%s\n", argv[i]);
+            execute_Line(argc, argv);
         }
     }
 }
@@ -93,9 +90,10 @@ std::string ProjectInfo::resolve_Line(std::string line)
     return line;
 }
 
-void ProjectInfo::format_Line(int *argc, char **argv, char *line){
+void ProjectInfo::format_Line(int *argc, char **argv, char *line)
+{
 
-    int str_Length = strlen(line);
+    size_t str_Length = strlen(line);
 
     bool ignore = false;
 
@@ -131,6 +129,25 @@ void ProjectInfo::format_Line(int *argc, char **argv, char *line){
     }
 }
 
-void ProjectInfo::execute_Line(int argc, char **argv) {
+#define TEST_ARG(arg, val) if (strcmp(arg, val) == 0)
 
+void ProjectInfo::execute_Line(int argc, char **argv)
+{
+    TEST_ARG(argv[0], "output")
+    {
+        TEST_ARG(argv[1], "app")
+        {
+            output_Type = APP;
+        }
+        else TEST_ARG(argv[1], "lib")
+        {
+            output_Type = LIB;
+        }
+#if defined(_WIN32)
+        for (int i = 0; argv[2][i] != 0; i++)
+            if (argv[2][i] == '/')
+                argv[2][i] = '\\';
+#endif
+        output_Path = std::string(argv[2]);
+    }
 }

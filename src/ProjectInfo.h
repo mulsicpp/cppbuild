@@ -18,7 +18,7 @@ struct TranslationUnit {
 
 struct ProjectInfo {
     std::string output_Path;
-    OutputType output_Type;
+    OutputType output_Type = NONE;
 
     Config config;
     Architecture arch;
