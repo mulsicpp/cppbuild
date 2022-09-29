@@ -37,6 +37,10 @@ void ProjectInfo::init(void)
     std::ifstream in("cppbuild");
 
     std::string line;
+    char line_cstr[MAX_LINE_LENGTH];
+
+    int argc;
+    char *argv[MAX_ARG_COUNT];
 
     while (std::getline(in, line))
     {
@@ -55,6 +59,12 @@ void ProjectInfo::init(void)
                 printf("exc: %s\n", e.what());
             }
             printf("%s\n", line.c_str());
+            strcpy(line_cstr, line.c_str());
+
+            format_Line(&argc, argv, line_cstr);
+            printf("%i\n", argc);
+            for(int i = 0; i < argc; i++)
+                printf("%s\n", argv[i]);
         }
     }
 }
@@ -80,8 +90,47 @@ std::string ProjectInfo::resolve_Line(std::string line)
     line = std::regex_replace(line, LIB_FUNC_REG, OS_LIB_FORMAT);
     line = std::regex_replace(line, DLL_FUNC_REG, OS_DLL_FORMAT);
 
-#if defined(_WIN32)
-    line = std::regex_replace(line, std::regex("/"), "\\");
-#endif
     return line;
+}
+
+void ProjectInfo::format_Line(int *argc, char **argv, char *line){
+
+    int str_Length = strlen(line);
+
+    bool ignore = false;
+
+    for (int i = 0; i < str_Length; i++)
+    {
+        if (!ignore && (line[i] == ' ' || line[i] == '\n' || line[i] == '\t' || line[i] == '\r'))
+            line[i] = 0;
+        else if (line[i] == '\"')
+        {
+            ignore = !ignore;
+            line[i] = 0;
+        }
+        else if (line[i] == '\\')
+        {
+            memcpy(line + i, line + i + 1, str_Length - i);
+        }
+    }
+    *argc = 0;
+
+    if (str_Length > 0 && line[0] != 0)
+    {
+        argv[0] = line;
+        (*argc)++;
+    }
+
+    for (int i = 1; i < str_Length && *argc < MAX_ARG_COUNT; i++)
+    {
+        if (line[i] != 0 && line[i - 1] == 0)
+        {
+            argv[*argc] = line + i;
+            (*argc)++;
+        }
+    }
+}
+
+void ProjectInfo::execute_Line(int argc, char **argv) {
+
 }

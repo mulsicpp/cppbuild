@@ -40,4 +40,8 @@ struct ProjectInfo {
     void init(void);
 private:
     std::string resolve_Line(std::string line);
+
+    static void format_Line(int *argc, char **argv, char *line);
+
+    void execute_Line(int argc, char **argv);
 };

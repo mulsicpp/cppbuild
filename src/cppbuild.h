@@ -59,10 +59,13 @@ void msg(const char *format, const char *str, T... args)
   printf("\n" C_RESET);
 }
 
-#define _NEW_LINE printf("\n");
+#define NEW_LINE printf("\n");
 
-#define _UPDATED 0x1
-#define _ERROR 0x2
+#define UPDATED_CODE 0x1
+#define ERROR_CODE 0x2
+
+#define MAX_ARG_COUNT 5
+#define MAX_LINE_LENGTH 512
 
 enum Architecture
 {
