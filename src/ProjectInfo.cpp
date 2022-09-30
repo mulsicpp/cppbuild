@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <regex>
+#include <algorithm>
 
 const static std::regex APP_FUNC_REG("\\$app\\(([^\\(\\)\\[\\]]*)\\)");
 const static std::regex LIB_FUNC_REG("\\$lib\\(([^\\(\\)\\[\\]]*)\\)");
@@ -41,41 +42,39 @@ void ProjectInfo::init(void)
 
     int argc;
     char *argv[MAX_ARG_COUNT];
+    std::string args[MAX_ARG_COUNT];
 
-    while (std::getline(in, line))
+    for (int i = 0; std::getline(in, line); i++)
     {
         if (!std::regex_match(line, _EMPTY_LINE_REG))
         {
             trim(line);
             if (line.at(0) == '#')
                 continue;
-            try
-            {
-                line = resolve_Line(line);
-            }
-            catch (std::exception e)
-            {
-                printf("exc: %s\n", e.what());
-            }
-            printf("%s\n", line.c_str());
-            strcpy(line_cstr, line.c_str());
 
+            strcpy(line_cstr, line.c_str());
             format_Line(&argc, argv, line_cstr);
-            execute_Line(argc, argv);
+
+            
+            printf("%s\n", line.c_str());
+            for(int i = 0; i < argc; i++)
+                args[i] = resolve_Arg(argv[i]);
+
+            execute_Line(argc, args, i + 1);
         }
     }
 }
 
-std::string ProjectInfo::resolve_Line(std::string line)
+std::string ProjectInfo::resolve_Arg(std::string arg)
 {
     std::smatch matches;
 
-    while (std::regex_search(line.cbegin(), line.cend(), matches, std::regex("\\$\\{(\\w*)\\}")))
+    while (std::regex_search(arg.cbegin(), arg.cend(), matches, std::regex("\\$\\{(\\w*)\\}")))
     {
         if (variables.find(matches[1].str()) != variables.end())
         {
             Value var = variables[matches[1].str()];
-            line = std::regex_replace(line, std::regex("\\$\\{" + matches[1].str() + "\\}"), var.value);
+            arg = std::regex_replace(arg, std::regex("\\$\\{" + matches[1].str() + "\\}"), var.value);
         }
         else
         {
@@ -83,11 +82,11 @@ std::string ProjectInfo::resolve_Line(std::string line)
         }
     }
 
-    line = std::regex_replace(line, APP_FUNC_REG, OS_APP_FORMAT);
-    line = std::regex_replace(line, LIB_FUNC_REG, OS_LIB_FORMAT);
-    line = std::regex_replace(line, DLL_FUNC_REG, OS_DLL_FORMAT);
+    arg = std::regex_replace(arg, APP_FUNC_REG, OS_APP_FORMAT);
+    arg = std::regex_replace(arg, LIB_FUNC_REG, OS_LIB_FORMAT);
+    arg = std::regex_replace(arg, DLL_FUNC_REG, OS_DLL_FORMAT);
 
-    return line;
+    return arg;
 }
 
 void ProjectInfo::format_Line(int *argc, char **argv, char *line)
@@ -131,23 +130,35 @@ void ProjectInfo::format_Line(int *argc, char **argv, char *line)
 
 #define TEST_ARG(arg, val) if (strcmp(arg, val) == 0)
 
-void ProjectInfo::execute_Line(int argc, char **argv)
+void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int line_Index)
 {
-    TEST_ARG(argv[0], "output")
+    if(args[0] == "output")
     {
-        TEST_ARG(argv[1], "app")
+        if(args[1] == "app")
         {
             output_Type = APP;
         }
-        else TEST_ARG(argv[1], "lib")
+        else if(args[1] == "lib")
         {
             output_Type = LIB;
+        } else {
+            error("SYNTAX ERROR in line %i: \'%s\' is not allowed as first argument for \'output\'. Has to be \'app\' or \'lib\'", line_Index, args[1].c_str());
         }
 #if defined(_WIN32)
-        for (int i = 0; argv[2][i] != 0; i++)
-            if (argv[2][i] == '/')
-                argv[2][i] = '\\';
+        std::replace(args[2].begin(), args[2].end(), '/', '\\');
 #endif
-        output_Path = std::string(argv[2]);
+        output_Path = args[2];
+    } else if(args[0] == "src") {
+        bool add = true;
+        if(args[1] == "add")
+        {
+            add = true;
+        }
+        else if(args[1] == "remove")
+        {
+            add = false;
+        } else {
+            error("SYNTAX ERROR in line %i: \'%s\' is not allowed as first argument for \'src\'. Has to be \'add\' or \'remove\'", line_Index, args[1].c_str());
+        }
     }
 }

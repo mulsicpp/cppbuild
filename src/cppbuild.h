@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stdio.h"
+#include <string>
 
 #if defined(_WIN32)
 #define OS_APP_FORMAT "$1.exe"
@@ -66,6 +67,8 @@ void msg(const char *format, const char *str, T... args)
 
 #define MAX_ARG_COUNT 5
 #define MAX_LINE_LENGTH 512
+
+bool path_Is_Contained(const std::string &base, const std::string &sub);
 
 enum Architecture
 {

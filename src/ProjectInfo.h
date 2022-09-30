@@ -39,9 +39,9 @@ struct ProjectInfo {
 
     void init(void);
 private:
-    std::string resolve_Line(std::string line);
+    std::string resolve_Arg(std::string line);
 
     static void format_Line(int *argc, char **argv, char *line);
 
-    void execute_Line(int argc, char **argv);
+    void execute_Line(int argc, std::string args[MAX_ARG_COUNT], int line_Index);
 };
