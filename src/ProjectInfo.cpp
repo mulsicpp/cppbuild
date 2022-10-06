@@ -50,9 +50,6 @@ void ProjectInfo::init(void)
     search_Source_Files();
     load_Header_Dependencies();
 
-    for (const auto &file : files)
-        printf("file: %s\n", file.cpp_File.c_str());
-
     // open build file
     std::ifstream in("cppbuild");
 
@@ -81,6 +78,9 @@ void ProjectInfo::init(void)
             execute_Line(argc, args, i + 1);
         }
     }
+
+    for (const auto &file : files)
+        printf("file: %s\n", file.cpp_File.c_str());
 }
 
 std::string ProjectInfo::resolve_Arg(std::string arg)
@@ -172,11 +172,14 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
     else if (args[0] == "ignore")
     {
 #if defined(_WIN32)
-        std::replace(args[1].begin(), args[2].end(), '/', '\\');
+        std::replace(args[1].begin(), args[1].end(), '/', '\\');
 #endif
-        for (const auto &entry : std::filesystem::recursive_directory_iterator(args[2]))
-        {
-        }
+        std::cmatch match;
+        for(int i = 0; i < files.size();)
+            if(files[i].cpp_File == args[1]) {
+                files.erase(files.begin() + i);
+            } else 
+                i++;
     }
 }
 
@@ -208,8 +211,11 @@ void ProjectInfo::load_Header_Dependencies(void)
             printf("src: %s\nheaders:", src.c_str());
             while (std::getline(ss, header, ';'))
             {
-                headers.push_back(header);
-                printf(" %s", header.c_str());
+                if (header.length() > 0)
+                {
+                    headers.push_back(header);
+                    printf(" %s", header.c_str());
+                }
             }
             printf("\n");
             header_Dependencies[src] = headers;
