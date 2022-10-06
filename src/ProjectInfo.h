@@ -48,4 +48,5 @@ private:
     void search_Source_Files(void);
 
     void load_Header_Dependencies(void);
+    void save_Header_Dependencies(void);
 };

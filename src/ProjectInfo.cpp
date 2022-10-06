@@ -203,13 +203,31 @@ void ProjectInfo::load_Header_Dependencies(void)
         while (std::getline(in, line))
         {
             std::stringstream ss(line);
+            headers.clear();
             std::getline(ss, src, ':');
             printf("src: %s\nheaders:", src.c_str());
-            while(std::getline(ss, header, ';')) {
+            while (std::getline(ss, header, ';'))
+            {
                 headers.push_back(header);
                 printf(" %s", header.c_str());
             }
             printf("\n");
+            header_Dependencies[src] = headers;
         }
+        in.close();
     }
+}
+
+void ProjectInfo::save_Header_Dependencies(void)
+{
+    std::ofstream out(".cppbuild/header_dep.txt");
+
+    for (const auto &[key, value] : header_Dependencies)
+    {
+        out << key << ":";
+        for (const std::string &header : value)
+            out << header << ";";
+        out << std::endl;
+    }
+    out.close();
 }
