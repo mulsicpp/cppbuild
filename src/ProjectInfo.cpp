@@ -1,8 +1,14 @@
+#if defined(_WIN32)
+#include "Windows.h"
+#endif
+
 #include "ProjectInfo.h"
 
 #include <fstream>
 #include <regex>
 #include <algorithm>
+#include <filesystem>
+#include <sstream>
 
 const static std::regex APP_FUNC_REG("\\$app\\(([^\\(\\)\\[\\]]*)\\)");
 const static std::regex LIB_FUNC_REG("\\$lib\\(([^\\(\\)\\[\\]]*)\\)");
@@ -34,6 +40,19 @@ void ProjectInfo::init(void)
     variables["_arch"] = {arch == X64 ? "x64" : "x86", true};
     variables["_config"] = {config == RELEASE ? "release" : "debug", true};
 
+    if (!std::filesystem::exists(".cppbuild"))
+        std::filesystem::create_directory(".cppbuild");
+#if defined(_WIN32)
+    int attributes = GetFileAttributesA(".cppbuild");
+    SetFileAttributesA(".cppbuild", attributes | FILE_ATTRIBUTE_HIDDEN);
+#endif
+
+    search_Source_Files();
+    load_Header_Dependencies();
+
+    for (const auto &file : files)
+        printf("file: %s\n", file.cpp_File.c_str());
+
     // open build file
     std::ifstream in("cppbuild");
 
@@ -55,9 +74,8 @@ void ProjectInfo::init(void)
             strcpy(line_cstr, line.c_str());
             format_Line(&argc, argv, line_cstr);
 
-            
             printf("%s\n", line.c_str());
-            for(int i = 0; i < argc; i++)
+            for (int i = 0; i < argc; i++)
                 args[i] = resolve_Arg(argv[i]);
 
             execute_Line(argc, args, i + 1);
@@ -132,33 +150,66 @@ void ProjectInfo::format_Line(int *argc, char **argv, char *line)
 
 void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int line_Index)
 {
-    if(args[0] == "output")
+    if (args[0] == "output")
     {
-        if(args[1] == "app")
+        if (args[1] == "app")
         {
             output_Type = APP;
         }
-        else if(args[1] == "lib")
+        else if (args[1] == "lib")
         {
             output_Type = LIB;
-        } else {
+        }
+        else
+        {
             error("SYNTAX ERROR in line %i: \'%s\' is not allowed as first argument for \'output\'. Has to be \'app\' or \'lib\'", line_Index, args[1].c_str());
         }
 #if defined(_WIN32)
         std::replace(args[2].begin(), args[2].end(), '/', '\\');
 #endif
         output_Path = args[2];
-    } else if(args[0] == "src") {
-        bool add = true;
-        if(args[1] == "add")
+    }
+    else if (args[0] == "ignore")
+    {
+#if defined(_WIN32)
+        std::replace(args[1].begin(), args[2].end(), '/', '\\');
+#endif
+        for (const auto &entry : std::filesystem::recursive_directory_iterator(args[2]))
         {
-            add = true;
         }
-        else if(args[1] == "remove")
+    }
+}
+
+void ProjectInfo::search_Source_Files(void)
+{
+    for (const auto &entry : std::filesystem::recursive_directory_iterator("."))
+    {
+        if (entry.is_regular_file() && (entry.path().extension() == ".cpp" || entry.path().extension() == ".c"))
         {
-            add = false;
-        } else {
-            error("SYNTAX ERROR in line %i: \'%s\' is not allowed as first argument for \'src\'. Has to be \'add\' or \'remove\'", line_Index, args[1].c_str());
+            files.push_back({std::filesystem::proximate(entry.path()).string(), ""});
+        }
+    }
+}
+
+void ProjectInfo::load_Header_Dependencies(void)
+{
+    if (std::filesystem::exists(".cppbuild/header_dep.txt"))
+    {
+        std::ifstream in(".cppbuild/header_dep.txt");
+
+        std::string line, src, header;
+        std::vector<std::string> headers;
+
+        while (std::getline(in, line))
+        {
+            std::stringstream ss(line);
+            std::getline(ss, src, ':');
+            printf("src: %s\nheaders:", src.c_str());
+            while(std::getline(ss, header, ';')) {
+                headers.push_back(header);
+                printf(" %s", header.c_str());
+            }
+            printf("\n");
         }
     }
 }
