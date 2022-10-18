@@ -174,12 +174,15 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
 #if defined(_WIN32)
         std::replace(args[1].begin(), args[1].end(), '/', '\\');
 #endif
-        std::cmatch match;
         for(int i = 0; i < files.size();)
             if(files[i].cpp_File == args[1]) {
                 files.erase(files.begin() + i);
             } else 
                 i++;
+    }
+    else if (args[0] == "std")
+    {
+        cpp_Standard = args[1];
     }
 }
 
