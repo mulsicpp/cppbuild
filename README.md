@@ -19,6 +19,7 @@
     - [**Adding macros**](#adding-macros)
     - [**Adding library paths**](#adding-library-paths)
     - [**Setting the language standard**](#setting-the-language-standard)
+    - [**Require another project**](#require-another-project)
 - [Building a project](#building-a-project)
   - [Flags:](#flags)
     - [**Run application**](#run-application)
@@ -123,6 +124,12 @@ Adds the path to the library paths of the compiler.
 std <std>
 ```
 Sets the C/C++ standard ('c++11', 'c++14', 'c++17', ...).
+
+#### **Require another project**
+```
+require <project_path>
+```
+Requires a different project. This means, that the specified project needs to be build before the current one. The other project is not linked to or used by the current project. This command simply ensures, that the other project is up to date.
 
 ## Building a project
 To build a project simply call the following command in the root directory of the project:

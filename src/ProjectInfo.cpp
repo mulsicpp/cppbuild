@@ -207,6 +207,10 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
     {
         comp_Flags += OS_STD(args[1]);
     }
+    else if (args[0] == "require")
+    {
+        dependencies.push_back(args[1]);
+    }
 }
 
 void ProjectInfo::search_Source_Files(void)
