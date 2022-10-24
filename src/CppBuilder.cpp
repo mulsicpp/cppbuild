@@ -16,6 +16,7 @@
 #include "stdlib.h"
 #include "string.h"
 
+//the constructer requires the arguments in the command line. From there it takes care of everything.
 CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
 {
 #if defined(_WIN32)
@@ -81,6 +82,8 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
     proj_Info.init();
 }
 
+
+// This function 
 void CppBuilder::setup()
 {
 #if defined(_WIN32)

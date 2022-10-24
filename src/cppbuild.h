@@ -65,8 +65,8 @@ void msg(const char *format, const char *str, T... args)
 #define UPDATED_CODE 0x1
 #define ERROR_CODE 0x2
 
-#define MAX_ARG_COUNT 5
-#define MAX_LINE_LENGTH 512
+#define MAX_ARG_COUNT 100
+#define MAX_LINE_LENGTH 2048
 
 bool path_Is_Contained(const std::string &base, const std::string &sub);
 
