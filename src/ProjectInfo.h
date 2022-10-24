@@ -23,12 +23,9 @@ struct ProjectInfo {
     Config config;
     Architecture arch;
 
-    std::string cpp_Standard;
-    std::string additional_Include_Paths;
-    std::string additional_Lib_Paths;
-    std::string libs;
-
-    std::string defines;
+    std::string comp_Flags = "";
+    std::string link_Flags = "";
+    std::string libs = "";
 
     std::unordered_map<std::string, Value> variables;
 

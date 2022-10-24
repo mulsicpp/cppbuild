@@ -180,9 +180,32 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
             } else 
                 i++;
     }
+    else if (args[0] == "incpath")
+    {
+        comp_Flags += OS_INCLUDE_PATH(args[1]);
+    }
+    else if (args[0] == "lib")
+    {
+        libs += args[1] + " ";
+    }
+    else if (args[0] == "linklib")
+    {
+        link_Flags += OS_LINK_LIBRARY(args[1]);
+    }
+    else if (args[0] == "libpath")
+    {
+        link_Flags += OS_LIBRARY_PATH(args[1]);
+    }
+    else if (args[0] == "define")
+    {
+        if(argc == 2)
+            comp_Flags += OS_DEFINE(args[1]);
+        else
+            comp_Flags += OS_MACRO(args[1], args[2]);
+    }
     else if (args[0] == "std")
     {
-        cpp_Standard = args[1];
+        comp_Flags += OS_STD(args[1]);
     }
 }
 

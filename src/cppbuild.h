@@ -12,7 +12,7 @@
 #define OS_LIBRARY_PATH(x) "/LIBPATH:" + x + " "
 #define OS_LINK_LIBRARY(x) "\"" + x + ".lib\" "
 #define OS_DEFINE(x) "/D" + x + " "
-#define OS_MACRO(x, y) "/D\"" + x + "=" + y + "\" "
+#define OS_MACRO(x, y) "/D" + x + "=" + y + " "
 #define OS_STD(x) "/std:" + x + " "
 #define OS_DIR_SEPARATOR "\\"
 
