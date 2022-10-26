@@ -82,11 +82,6 @@ void ProjectInfo::init(void)
 
 }
 
-void ProjectInfo::build(void)
-{
-
-}
-
 std::string ProjectInfo::resolve_Arg(std::string arg)
 {
     std::smatch matches;

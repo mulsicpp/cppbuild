@@ -82,6 +82,18 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
     proj_Info.init();
 }
 
+void CppBuilder::build(void) {
+    for(const auto &tu : proj_Info.files)
+        compile(tu);
+    switch(proj_Info.output_Type) {
+        case APP:
+            link_App();
+            break;
+        case LIB:
+            link_Lib();
+    }
+}
+
 
 // This function 
 void CppBuilder::setup()

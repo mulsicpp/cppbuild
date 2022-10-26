@@ -15,5 +15,13 @@ struct CppBuilder {
 
     CppBuilder(int argc, char* argv[]);
 
+    void build(void);
+
     void setup(void);
+
+    void compile(TranslationUnit tu);
+
+    void link_App(void);
+
+    void link_Lib(void);
 };
