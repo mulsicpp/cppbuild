@@ -4,6 +4,7 @@
 #include <string>
 
 #if defined(_WIN32)
+#define OS_NAME "win32"
 #define OS_APP_FORMAT "$1.exe"
 #define OS_LIB_FORMAT "$1.lib"
 #define OS_DLL_FORMAT "$1.dll"
@@ -17,6 +18,7 @@
 #define OS_DIR_SEPARATOR "\\"
 
 #elif defined(__linux__)
+#define OS_NAME "linux"
 #define OS_APP_FORMAT "$1"
 #define OS_LIB_FORMAT "lib$1.a"
 #define OS_DLL_FORMAT "lib$1.so"

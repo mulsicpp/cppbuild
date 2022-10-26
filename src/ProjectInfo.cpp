@@ -32,13 +32,11 @@ static std::string &trim(std::string &str)
 void ProjectInfo::init(void)
 {
     // set build constants
-#if defined(_WIN32)
-    variables["_platform"] = {"win32", true};
-#elif defined(__linux__)
-    variables["_platform"] = {"linux", true};
-#endif
+    variables["_platform"] = { OS_NAME, true};
     variables["_arch"] = {arch == X64 ? "x64" : "x86", true};
     variables["_config"] = {config == RELEASE ? "release" : "debug", true};
+
+    bin_Dir_Name = std::string(OS_NAME) + (arch == X64 ? "_x64" : "_x86") + (config == RELEASE ? "_release" : "_debug");
 
     if (!std::filesystem::exists(".cppbuild"))
         std::filesystem::create_directory(".cppbuild");
@@ -80,7 +78,13 @@ void ProjectInfo::init(void)
     }
 
     for (const auto &file : files)
-        printf("file: %s\n", file.cpp_File.c_str());
+        printf("cpp: %s >>> o: %s\n", file.cpp_File.c_str(), file.o_File.c_str());
+
+}
+
+void ProjectInfo::build(void)
+{
+
 }
 
 std::string ProjectInfo::resolve_Arg(std::string arg)
@@ -174,10 +178,12 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
 #if defined(_WIN32)
         std::replace(args[1].begin(), args[1].end(), '/', '\\');
 #endif
-        for(int i = 0; i < files.size();)
-            if(files[i].cpp_File == args[1]) {
+        for (int i = 0; i < files.size();)
+            if (files[i].cpp_File == args[1])
+            {
                 files.erase(files.begin() + i);
-            } else 
+            }
+            else
                 i++;
     }
     else if (args[0] == "incpath")
@@ -198,7 +204,7 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
     }
     else if (args[0] == "define")
     {
-        if(argc == 2)
+        if (argc == 2)
             comp_Flags += OS_DEFINE(args[1]);
         else
             comp_Flags += OS_MACRO(args[1], args[2]);
@@ -219,7 +225,10 @@ void ProjectInfo::search_Source_Files(void)
     {
         if (entry.is_regular_file() && (entry.path().extension() == ".cpp" || entry.path().extension() == ".c"))
         {
-            files.push_back({std::filesystem::proximate(entry.path()).string(), ""});
+            TranslationUnit u;
+            u.cpp_File = std::filesystem::proximate(entry.path()).string();
+            u.o_File = (std::filesystem::path(".cppbuild" OS_DIR_SEPARATOR + bin_Dir_Name) / std::filesystem::path(u.cpp_File).replace_extension(".o")).string();
+            files.push_back(u);
         }
     }
 }

@@ -34,7 +34,12 @@ struct ProjectInfo {
 
     std::vector<std::string> dependencies;
 
+    std::string bin_Dir_Name = "";
+
     void init(void);
+
+    void build(void);
+    
 private:
     std::string resolve_Arg(std::string line);
 
