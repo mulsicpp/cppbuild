@@ -19,9 +19,10 @@ struct CppBuilder {
 
     void setup(void);
 
+private:
     void compile(TranslationUnit tu);
 
-    void link_App(void);
+    bool needs_Update(TranslationUnit tu);
 
-    void link_Lib(void);
+    void link(void);
 };

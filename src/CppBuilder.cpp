@@ -85,13 +85,34 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
 void CppBuilder::build(void) {
     for(const auto &tu : proj_Info.files)
         compile(tu);
-    switch(proj_Info.output_Type) {
-        case APP:
-            link_App();
-            break;
-        case LIB:
-            link_Lib();
+    link();
+}
+
+#define MOD_TIME std::filesystem::last_write_time
+#define EXISTS std::filesystem::exists
+
+void CppBuilder::compile(TranslationUnit tu) {
+    msg(WHITE, "compiling %s ...", tu.cpp_File.c_str());
+    msg(WHITE, "needs update: %s", needs_Update(tu) ? "true" : "false");
+}
+
+bool CppBuilder::needs_Update(TranslationUnit tu) {
+    if(!EXISTS(tu.o_File))
+        return true;
+    bool comp_Needed = MOD_TIME(tu.cpp_File) > MOD_TIME(tu.o_File);
+
+    const auto& header_Deps = proj_Info.header_Dependencies[tu.cpp_File];
+    for(int i = 0; i < header_Deps.size() && !comp_Needed; i++)
+    {
+        if(!EXISTS(header_Deps[i]))
+            continue;
+        if(MOD_TIME(header_Deps[i]) > MOD_TIME(tu.o_File))
+            return true;
     }
+}
+
+void CppBuilder::link(void) {
+
 }
 
 
