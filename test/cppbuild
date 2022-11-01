@@ -1,5 +1,5 @@
-output app out/${_platform}_${_arch}_${_config}/$app(test)
+output lib lib/${_platform}_${_arch}_${_config}/$lib(test)
 
-//ignore src/math/my_math.cpp
+ignore src/main.cpp
 
 std c++17

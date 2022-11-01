@@ -9,7 +9,7 @@
 
 #include "CppBuilder.h"
 #include "native_commands.h"
-#include "compiler_commands.h"
+#include "SystemInterface.h"
 
 #include <filesystem>
 #include <exception>
@@ -95,6 +95,8 @@ void CppBuilder::build(void)
         compile(tu);
     link();
     proj_Info.save_Header_Dependencies();
+    if(run && proj_Info.output_Type == APP)
+        si.execute_Program(proj_Info.output_Path.c_str(), NULL);
 }
 
 void CppBuilder::compile(TranslationUnit tu)
@@ -104,7 +106,7 @@ void CppBuilder::compile(TranslationUnit tu)
     {
         msg(WHITE, "needs update");
         std::filesystem::create_directories(std::filesystem::path(tu.o_File).parent_path());
-        msg(YELLOW, "returned: %i", ::compile(tu, &proj_Info));
+        msg(YELLOW, "returned: %i", si.compile(tu, &proj_Info));
     }
 }
 
@@ -131,9 +133,9 @@ void CppBuilder::link(void)
 {
     std::filesystem::create_directories(std::filesystem::path(proj_Info.output_Path).parent_path());
     if(proj_Info.output_Type == APP)
-        link_App(&proj_Info);
+        si.link_App(&proj_Info);
     else
-        link_Lib(&proj_Info);
+        si.link_Lib(&proj_Info);
 }
 
 // This function

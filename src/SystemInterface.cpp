@@ -5,7 +5,7 @@
 #include <linux/limits.h>
 #endif
 
-#include "compiler_commands.h"
+#include "SystemInterface.h"
 #include "cppbuild.h"
 
 #include <filesystem>
@@ -13,7 +13,7 @@
 #include <string>
 #include <string.h>
 
-int compile(TranslationUnit tu, ProjectInfo *p_Proj_Info)
+int SystemInterface::compile(TranslationUnit tu, ProjectInfo *p_Proj_Info)
 {
 #if defined(_WIN32)
 
@@ -85,7 +85,7 @@ int compile(TranslationUnit tu, ProjectInfo *p_Proj_Info)
 #endif
 }
 
-int link_App(ProjectInfo *p_Proj_Info)
+int SystemInterface::link_App(ProjectInfo *p_Proj_Info)
 {
     std::string o_Files = "";
     for(const auto &tu : p_Proj_Info->files)
@@ -112,6 +112,54 @@ int link_App(ProjectInfo *p_Proj_Info)
 #endif
 }
 
-int link_Lib(ProjectInfo *p_Proj_Info)
+int SystemInterface::link_Lib(ProjectInfo *p_Proj_Info)
 {
+    std::string o_Files = "";
+    for(const auto &tu : p_Proj_Info->files)
+        o_Files += "\"" + tu.o_File + "\" ";
+#if defined(_WIN32)
+
+#elif defined(__linux__)
+    char buffer[1024];
+    FILE *pipe = popen(("ar rcs \"" + p_Proj_Info->output_Path + "\" " + o_Files + " 2>&1").c_str(), "r");
+
+    printf("running g++...\n");
+
+    if (!pipe)
+    {
+        printf("couldn't run\n");
+        return ERROR_CODE;
+    }
+
+    while (fgets(buffer, 1024, pipe))
+        printf("%s", buffer);
+
+    int rc = pclose(pipe);
+    return rc == 0 ? UPDATED_CODE : ERROR_CODE;
+#endif
+}
+
+int SystemInterface::execute_Program(const char* prog, const char* args)
+{
+#if defined(_WIN32)
+
+#elif defined(__linux__)
+  char buffer[512];
+  FILE *pipe = popen(("\'" + std::string(prog) + "\' " + std::string(args == NULL ? "" : args)).c_str(), "r");
+
+  if (!pipe)
+  {
+    printf(RED "error : process wasn't able to run\n" C_RESET);
+    exit(-1);
+  }
+
+  while (!feof(pipe))
+  {
+    if (fgets(buffer, 512, pipe) != nullptr)
+      printf("%s", buffer);
+  }
+
+  int rc = pclose(pipe);
+  return rc;
+#endif
 }
