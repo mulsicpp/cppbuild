@@ -38,15 +38,15 @@ struct ProjectInfo {
 
     void init(void);
     
+    void search_Source_Files(void);
+
+    void load_Header_Dependencies(void);
+    void save_Header_Dependencies(void);
+    
 private:
     std::string resolve_Arg(std::string line);
 
     static void format_Line(int *argc, char **argv, char *line);
 
     void execute_Line(int argc, std::string args[MAX_ARG_COUNT], int line_Index);
-
-    void search_Source_Files(void);
-
-    void load_Header_Dependencies(void);
-    void save_Header_Dependencies(void);
 };

@@ -9,6 +9,7 @@
 
 #include "CppBuilder.h"
 #include "native_commands.h"
+#include "compiler_commands.h"
 
 #include <filesystem>
 #include <exception>
@@ -16,7 +17,10 @@
 #include "stdlib.h"
 #include "string.h"
 
-//the constructer requires the arguments in the command line. From there it takes care of everything.
+#define MOD_TIME std::filesystem::last_write_time
+#define EXISTS std::filesystem::exists
+
+// the constructer requires the arguments in the command line. From there it takes care of everything.
 CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
 {
 #if defined(_WIN32)
@@ -80,43 +84,59 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
     std::filesystem::current_path(path_To_Project);
 
     proj_Info.init();
+
+    if (!EXISTS(proj_Info.output_Path) || MOD_TIME("cppbuild") > MOD_TIME(proj_Info.output_Path))
+        force = true;
 }
 
-void CppBuilder::build(void) {
-    for(const auto &tu : proj_Info.files)
+void CppBuilder::build(void)
+{
+    for (const auto &tu : proj_Info.files)
         compile(tu);
     link();
+    proj_Info.save_Header_Dependencies();
 }
 
-#define MOD_TIME std::filesystem::last_write_time
-#define EXISTS std::filesystem::exists
-
-void CppBuilder::compile(TranslationUnit tu) {
+void CppBuilder::compile(TranslationUnit tu)
+{
     msg(WHITE, "compiling %s ...", tu.cpp_File.c_str());
-    msg(WHITE, "needs update: %s", needs_Update(tu) ? "true" : "false");
-}
-
-bool CppBuilder::needs_Update(TranslationUnit tu) {
-    if(!EXISTS(tu.o_File))
-        return true;
-    bool comp_Needed = MOD_TIME(tu.cpp_File) > MOD_TIME(tu.o_File);
-
-    const auto& header_Deps = proj_Info.header_Dependencies[tu.cpp_File];
-    for(int i = 0; i < header_Deps.size() && !comp_Needed; i++)
+    if (force || needs_Update(tu))
     {
-        if(!EXISTS(header_Deps[i]))
-            continue;
-        if(MOD_TIME(header_Deps[i]) > MOD_TIME(tu.o_File))
-            return true;
+        msg(WHITE, "needs update");
+        std::filesystem::create_directories(std::filesystem::path(tu.o_File).parent_path());
+        msg(YELLOW, "returned: %i", ::compile(tu, &proj_Info));
     }
 }
 
-void CppBuilder::link(void) {
+bool CppBuilder::needs_Update(TranslationUnit tu)
+{
+    if (!EXISTS(tu.o_File) || MOD_TIME(tu.cpp_File) > MOD_TIME(tu.o_File))
+        return true;
 
+    if (proj_Info.header_Dependencies.find(tu.cpp_File) == proj_Info.header_Dependencies.end())
+        return true;
+
+    const auto &header_Deps = proj_Info.header_Dependencies[tu.cpp_File];
+    for (int i = 0; i < header_Deps.size(); i++)
+    {
+        if (!EXISTS(header_Deps[i]))
+            continue;
+        if (MOD_TIME(header_Deps[i]) > MOD_TIME(tu.o_File))
+            return true;
+    }
+    return false;
 }
 
+void CppBuilder::link(void)
+{
+    std::filesystem::create_directories(std::filesystem::path(proj_Info.output_Path).parent_path());
+    if(proj_Info.output_Type == APP)
+        link_App(&proj_Info);
+    else
+        link_Lib(&proj_Info);
+}
 
-// This function 
+// This function
 void CppBuilder::setup()
 {
 #if defined(_WIN32)
@@ -162,8 +182,8 @@ void CppBuilder::setup()
         fputs((std::string("/libpath:\"") + subfolder.path().string() + "/ucrt/x64\" ").c_str(), p_File);
     }
     fprintf(p_File, "\n");
-    fprintf(p_File, "%s/bin/Host%s/x86\n", msvc_path.string().c_str(), sizeof(void*) == 8 ? "x64" : "x86");
-    fprintf(p_File, "%s/bin/Host%s/x64\n", msvc_path.string().c_str(), sizeof(void*) == 8 ? "x64" : "x86");
+    fprintf(p_File, "%s/bin/Host%s/x86\n", msvc_path.string().c_str(), sizeof(void *) == 8 ? "x64" : "x86");
+    fprintf(p_File, "%s/bin/Host%s/x64\n", msvc_path.string().c_str(), sizeof(void *) == 8 ? "x64" : "x86");
 
     fclose(p_File);
 

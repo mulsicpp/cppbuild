@@ -230,9 +230,9 @@ void ProjectInfo::search_Source_Files(void)
 
 void ProjectInfo::load_Header_Dependencies(void)
 {
-    if (std::filesystem::exists(".cppbuild/header_dep.txt"))
+    if (std::filesystem::exists(".cppbuild/" + bin_Dir_Name + "/header_dep.txt"))
     {
-        std::ifstream in(".cppbuild/header_dep.txt");
+        std::ifstream in(".cppbuild/" + bin_Dir_Name + "/header_dep.txt");
 
         std::string line, src, header;
         std::vector<std::string> headers;
@@ -260,7 +260,7 @@ void ProjectInfo::load_Header_Dependencies(void)
 
 void ProjectInfo::save_Header_Dependencies(void)
 {
-    std::ofstream out(".cppbuild/header_dep.txt");
+    std::ofstream out(".cppbuild/" + bin_Dir_Name + "/header_dep.txt");
 
     for (const auto &[key, value] : header_Dependencies)
     {
