@@ -1,0 +1,3 @@
+output lib lib/${_platform}_${_arch}_${_config}/$lib(test)
+
+std c++17

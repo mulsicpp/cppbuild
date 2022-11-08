@@ -26,6 +26,7 @@ struct ProjectInfo {
     std::string comp_Flags = "";
     std::string link_Flags = "";
     std::string libs = "";
+    std::vector<std::string> include_Paths;
 
     std::unordered_map<std::string, Value> variables;
 

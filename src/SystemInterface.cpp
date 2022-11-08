@@ -61,6 +61,16 @@ int SystemInterface::compile(TranslationUnit tu, ProjectInfo *p_Proj_Info)
                 if (!rel.empty() && rel.native()[0] != '.')
                 {
                     headers.push_back(std::filesystem::proximate(path).string());
+                    continue;
+                }
+                for (const auto &include_Path : p_Proj_Info->include_Paths)
+                {
+                    auto rel = std::filesystem::relative(path, include_Path);
+                    if (!rel.empty() && rel.native()[0] != '.')
+                    {
+                        headers.push_back(std::filesystem::proximate(path).string());
+                        break;
+                    }
                 }
             }
         }
@@ -88,13 +98,13 @@ int SystemInterface::compile(TranslationUnit tu, ProjectInfo *p_Proj_Info)
 int SystemInterface::link_App(ProjectInfo *p_Proj_Info)
 {
     std::string o_Files = "";
-    for(const auto &tu : p_Proj_Info->files)
+    for (const auto &tu : p_Proj_Info->files)
         o_Files += "\"" + tu.o_File + "\" ";
 #if defined(_WIN32)
 
 #elif defined(__linux__)
     char buffer[1024];
-    FILE *pipe = popen(("g++ -march=x86-64 " + std::string(p_Proj_Info->arch == X86 ? "-m32 " : "-m64 ") + "-o \"" + p_Proj_Info->output_Path + "\" " + o_Files + p_Proj_Info->link_Flags + " 2>&1").c_str(), "r");
+    FILE *pipe = popen(("g++ -march=x86-64 " + std::string(p_Proj_Info->arch == X86 ? "-m32 " : "-m64 ") + "-o \"" + p_Proj_Info->output_Path + "\" " + o_Files + p_Proj_Info->link_Flags + + " " + p_Proj_Info->libs + " 2>&1").c_str(), "r");
 
     printf("running g++...\n");
 
@@ -115,7 +125,7 @@ int SystemInterface::link_App(ProjectInfo *p_Proj_Info)
 int SystemInterface::link_Lib(ProjectInfo *p_Proj_Info)
 {
     std::string o_Files = "";
-    for(const auto &tu : p_Proj_Info->files)
+    for (const auto &tu : p_Proj_Info->files)
         o_Files += "\"" + tu.o_File + "\" ";
 #if defined(_WIN32)
 
@@ -139,27 +149,27 @@ int SystemInterface::link_Lib(ProjectInfo *p_Proj_Info)
 #endif
 }
 
-int SystemInterface::execute_Program(const char* prog, const char* args)
+int SystemInterface::execute_Program(const char *prog, const char *args)
 {
 #if defined(_WIN32)
 
 #elif defined(__linux__)
-  char buffer[512];
-  FILE *pipe = popen(("\'" + std::string(prog) + "\' " + std::string(args == NULL ? "" : args)).c_str(), "r");
+    char buffer[512];
+    FILE *pipe = popen(("\'" + std::string(prog) + "\' " + std::string(args == NULL ? "" : args)).c_str(), "r");
 
-  if (!pipe)
-  {
-    printf(RED "error : process wasn't able to run\n" C_RESET);
-    exit(-1);
-  }
+    if (!pipe)
+    {
+        printf(RED "error : process wasn't able to run\n" C_RESET);
+        exit(-1);
+    }
 
-  while (!feof(pipe))
-  {
-    if (fgets(buffer, 512, pipe) != nullptr)
-      printf("%s", buffer);
-  }
+    while (!feof(pipe))
+    {
+        if (fgets(buffer, 512, pipe) != nullptr)
+            printf("%s", buffer);
+    }
 
-  int rc = pclose(pipe);
-  return rc;
+    int rc = pclose(pipe);
+    return rc;
 #endif
 }

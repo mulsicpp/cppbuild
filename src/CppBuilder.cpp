@@ -91,12 +91,24 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
 
 void CppBuilder::build(void)
 {
+    std::string cppbuild_Path;
+#if defined(_WIN32)
+    cppbuild_Path = (std::filesystem::path(path_To_Exe) / "cppbuild.exe").string();
+#elif defined(__linux__)
+    cppbuild_Path = (std::filesystem::path(path_To_Exe) / "cppbuild").string();
+#endif
+    for (const auto &dep : proj_Info.dependencies)
+    {
+        si.execute_Program(cppbuild_Path.c_str(), ("--path=" + dep + " --arch=" + (proj_Info.arch == X64 ? "x64" : "x86") + " --config=" + (proj_Info.config == RELEASE ? "release" : "debug") + (force ? " --force" : "")).c_str());
+    }
     for (const auto &tu : proj_Info.files)
         compile(tu);
     link();
     proj_Info.save_Header_Dependencies();
-    if(run && proj_Info.output_Type == APP)
+    if (run && proj_Info.output_Type == APP) {
+        msg(WHITE, "running the shit ...");
         si.execute_Program(proj_Info.output_Path.c_str(), NULL);
+    }
 }
 
 void CppBuilder::compile(TranslationUnit tu)
@@ -132,7 +144,7 @@ bool CppBuilder::needs_Update(TranslationUnit tu)
 void CppBuilder::link(void)
 {
     std::filesystem::create_directories(std::filesystem::path(proj_Info.output_Path).parent_path());
-    if(proj_Info.output_Type == APP)
+    if (proj_Info.output_Type == APP)
         si.link_App(&proj_Info);
     else
         si.link_Lib(&proj_Info);

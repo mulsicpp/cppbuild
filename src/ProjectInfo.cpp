@@ -184,6 +184,7 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
     else if (args[0] == "incpath")
     {
         comp_Flags += OS_INCLUDE_PATH(args[1]);
+        include_Paths.push_back(args[1]);
     }
     else if (args[0] == "lib")
     {

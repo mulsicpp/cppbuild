@@ -1,5 +1,11 @@
-output lib lib/${_platform}_${_arch}_${_config}/$lib(test)
+output app out/${_platform}_${_arch}_${_config}/$app(test)
 
-ignore src/main.cpp
+define LOL "haha"
 
 std c++17
+
+incpath ../test_lib
+
+require ../test_lib
+
+lib ../test_lib/lib/${_platform}_${_arch}_${_config}/$lib(test)

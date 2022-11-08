@@ -1,2 +1,1 @@
-src/main.cpp:src/math/my_math.h;src/math/random_useless.h;
-src/math/my_math.cpp:src/math/my_math.h;
+src/main.cpp:../test_lib/math/my_math.h;../test_lib/math/random_useless.h;
