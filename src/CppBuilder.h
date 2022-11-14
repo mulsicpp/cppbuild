@@ -8,7 +8,7 @@
 struct CppBuilder {
     std::string path_To_Exe, path_To_Project;
 
-    bool run, force;
+    bool run, force, update_Needed;
 
     ProjectInfo proj_Info;
     SystemInterface si;

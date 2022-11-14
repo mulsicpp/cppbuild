@@ -6,8 +6,12 @@ int main(int argc, char *argv[])
 {
     CppBuilder builder(argc, argv);
 
+    for(int i = 0; i < argc; i++) {
+        printf("%s\n", argv[i]);
+    }
+
     printf("output path: %s\n", builder.proj_Info.output_Path.c_str());
-    printf("output type: %i\n", builder.proj_Info.output_Type);
+    printf("force: %i\n", builder.force);
 
     builder.build();
 

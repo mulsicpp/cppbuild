@@ -21,7 +21,7 @@
 #define EXISTS std::filesystem::exists
 
 // the constructer requires the arguments in the command line. From there it takes care of everything.
-CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
+CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false), update_Needed(false)
 {
 #if defined(_WIN32)
     char result[MAX_PATH];
@@ -39,7 +39,7 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
     proj_Info.arch = sizeof(void *) == 8 ? X64 : X86;
     proj_Info.config = RELEASE;
 
-    for (int i = 1; i < argc; i++)
+    for (int i = 0; i < argc; i++)
     {
         if (strlen(argv[i]) == 7 && strcmp(argv[i], "--setup") == 0)
             setup();
@@ -74,7 +74,11 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
             run = true;
         else if (strlen(argv[i]) == 7 && strcmp(argv[i], "--force") == 0)
             force = true;
-        else
+        else if (strlen(argv[i]) == 6 && strcmp(argv[i], "--help") == 0) {
+            printf("This text is not going to help you LOL :)\n");
+            exit(0);
+        }
+        else if(i > 0)
             error("SYNTAX ERROR: Unrecognized flag %s", argv[i]);
     }
 
@@ -86,7 +90,37 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false)
     proj_Info.init();
 
     if (!EXISTS(proj_Info.output_Path) || MOD_TIME("cppbuild") > MOD_TIME(proj_Info.output_Path))
-        force = true;
+        update_Needed = true;
+
+    std::filesystem::current_path(path_To_Exe);
+    if (!EXISTS("cppbuild_win32_info.txt"))
+        error("ERROR: Windows setup required (--setup)");
+
+    FILE *p_File = fopen("cppbuild_win32_info.txt", "r");
+    char buffer[2048];
+    if (p_File)
+    {
+        fgets(buffer, 2048, p_File);
+        buffer[strlen(buffer) - 1] = 0;
+        si.system_Include_Paths = buffer;
+
+        fgets(buffer, 2048, p_File);
+        buffer[strlen(buffer) - 1] = 0;
+        si.system_Lib32_Paths = buffer;
+
+        fgets(buffer, 2048, p_File);
+        buffer[strlen(buffer) - 1] = 0;
+        si.system_Lib64_Paths = buffer;
+
+        fgets(buffer, 2048, p_File);
+        buffer[strlen(buffer) - 1] = 0;
+        si.compiler32 = buffer;
+
+        fgets(buffer, 2048, p_File);
+        buffer[strlen(buffer) - 1] = 0;
+        si.compiler64 = buffer;
+    }
+    std::filesystem::current_path(path_To_Project);
 }
 
 void CppBuilder::build(void)
@@ -97,15 +131,21 @@ void CppBuilder::build(void)
 #elif defined(__linux__)
     cppbuild_Path = (std::filesystem::path(path_To_Exe) / "cppbuild").string();
 #endif
+
+    printf("updating dependecies ...\n");
     for (const auto &dep : proj_Info.dependencies)
     {
-        si.execute_Program(cppbuild_Path.c_str(), ("--path=" + dep + " --arch=" + (proj_Info.arch == X64 ? "x64" : "x86") + " --config=" + (proj_Info.config == RELEASE ? "release" : "debug") + (force ? " --force" : "")).c_str());
+        printf("dependecy: %s\n", dep.c_str());
+        si.execute_Program(cppbuild_Path.c_str(), ("--path=\"" + dep + "\" --arch=" + (proj_Info.arch == X64 ? "x64" : "x86") + " --config=" + (proj_Info.config == RELEASE ? "release" : "debug") + (force ? " --force" : "")).c_str());
+        //si.execute_Program(cppbuild_Path.c_str(), "--help");
     }
+    printf("updated dependecies\n");
     for (const auto &tu : proj_Info.files)
         compile(tu);
     link();
     proj_Info.save_Header_Dependencies();
-    if (run && proj_Info.output_Type == APP) {
+    if (run && proj_Info.output_Type == APP)
+    {
         msg(WHITE, "running the shit ...");
         si.execute_Program(proj_Info.output_Path.c_str(), NULL);
     }
@@ -114,7 +154,7 @@ void CppBuilder::build(void)
 void CppBuilder::compile(TranslationUnit tu)
 {
     msg(WHITE, "compiling %s ...", tu.cpp_File.c_str());
-    if (force || needs_Update(tu))
+    if (force || update_Needed || needs_Update(tu))
     {
         msg(WHITE, "needs update");
         std::filesystem::create_directories(std::filesystem::path(tu.o_File).parent_path());

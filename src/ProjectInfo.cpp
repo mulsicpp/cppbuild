@@ -68,17 +68,12 @@ void ProjectInfo::init(void)
 
             strcpy(line_cstr, line.c_str());
             format_Line(&argc, argv, line_cstr);
-
-            printf("%s\n", line.c_str());
             for (int i = 0; i < argc; i++)
                 args[i] = resolve_Arg(argv[i]);
 
             execute_Line(argc, args, i + 1);
         }
     }
-
-    for (const auto &file : files)
-        printf("cpp: %s >>> o: %s\n", file.cpp_File.c_str(), file.o_File.c_str());
 
 }
 
@@ -243,16 +238,13 @@ void ProjectInfo::load_Header_Dependencies(void)
             std::stringstream ss(line);
             headers.clear();
             std::getline(ss, src, ':');
-            printf("src: %s\nheaders:", src.c_str());
             while (std::getline(ss, header, ';'))
             {
                 if (header.length() > 0)
                 {
                     headers.push_back(header);
-                    printf(" %s", header.c_str());
                 }
             }
-            printf("\n");
             header_Dependencies[src] = headers;
         }
         in.close();
