@@ -8,7 +8,6 @@
 #endif
 
 #include "CppBuilder.h"
-#include "native_commands.h"
 #include "SystemInterface.h"
 
 #include <filesystem>
@@ -74,11 +73,12 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false), updat
             run = true;
         else if (strlen(argv[i]) == 7 && strcmp(argv[i], "--force") == 0)
             force = true;
-        else if (strlen(argv[i]) == 6 && strcmp(argv[i], "--help") == 0) {
+        else if (strlen(argv[i]) == 6 && strcmp(argv[i], "--help") == 0)
+        {
             printf("This text is not going to help you LOL :)\n");
             exit(0);
         }
-        else if(i > 0)
+        else if (i > 0)
             error("SYNTAX ERROR: Unrecognized flag %s", argv[i]);
     }
 
@@ -123,6 +123,16 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false), updat
     std::filesystem::current_path(path_To_Project);
 }
 
+void CppBuilder::print_Project_Info(void)
+{
+    printf(F_WHITE F_BOLD "Project:       " F_RESET "\'%s\'\n", path_To_Project.c_str());
+    printf(F_WHITE F_BOLD "Output:        " F_RESET "\'%s\' (%s)\n", proj_Info.output_Path.c_str(), proj_Info.output_Type == APP ? "Application" : (proj_Info.output_Type == LIB ? "Static Library" : "None"));
+    printf(F_WHITE F_BOLD "Platform:      " F_RESET "%s\n", strcmp(OS_NAME, "win32") == 0 ? "Windows" : "Linux");
+    printf(F_WHITE F_BOLD "Architecture:  " F_RESET "%s\n", proj_Info.arch == X64 ? "x64" : "x86");
+    printf(F_WHITE F_BOLD "Configuration: " F_RESET "%s\n", proj_Info.config == RELEASE ? "Release" : "Debug");
+    printf("\n");
+}
+
 void CppBuilder::build(void)
 {
     std::string cppbuild_Path;
@@ -132,33 +142,49 @@ void CppBuilder::build(void)
     cppbuild_Path = (std::filesystem::path(path_To_Exe) / "cppbuild").string();
 #endif
 
-    printf("updating dependecies ...\n");
     for (const auto &dep : proj_Info.dependencies)
     {
-        printf("dependecy: %s\n", dep.c_str());
-        si.execute_Program(cppbuild_Path.c_str(), ("--path=\"" + dep + "\" --arch=" + (proj_Info.arch == X64 ? "x64" : "x86") + " --config=" + (proj_Info.config == RELEASE ? "release" : "debug") + (force ? " --force" : "")).c_str());
-        //si.execute_Program(cppbuild_Path.c_str(), "--help");
+        printf(F_CYAN F_BOLD "Building dependency \'%s\'\n", dep);
+        int ret = si.execute_Program(cppbuild_Path.c_str(), ("--path=\"" + dep + "\" --arch=" + (proj_Info.arch == X64 ? "x64" : "x86") + " --config=" + (proj_Info.config == RELEASE ? "release" : "debug") + (force ? " --force" : "")).c_str());
+        if(ret == ERROR_CODE) {
+            printf(F_YELLOW "WARNING: Build of dependecy \'%s\'\n" F_RESET, dep);
+        }
     }
-    printf("updated dependecies\n");
+
+    printf(F_BOLD "Compiling source files: \n" F_RESET);
     for (const auto &tu : proj_Info.files)
         compile(tu);
+    printf("\n");
+
     link();
     proj_Info.save_Header_Dependencies();
     if (run && proj_Info.output_Type == APP)
     {
-        msg(WHITE, "running the shit ...");
-        si.execute_Program(proj_Info.output_Path.c_str(), NULL);
+        printf(F_BOLD "Running \'%s\' ...\n" F_RESET, proj_Info.output_Path.c_str());
+        int ret = si.execute_Program(proj_Info.output_Path.c_str(), NULL);
+        printf(F_BOLD "Application terminated with %i\n" F_RESET, ret);
     }
 }
 
 void CppBuilder::compile(TranslationUnit tu)
 {
-    msg(WHITE, "compiling %s ...", tu.cpp_File.c_str());
+    printf("\'%s\'", tu.cpp_File.c_str());
     if (force || update_Needed || needs_Update(tu))
     {
-        msg(WHITE, "needs update");
+        printf("\n");
         std::filesystem::create_directories(std::filesystem::path(tu.o_File).parent_path());
-        msg(YELLOW, "returned: %i", si.compile(tu, &proj_Info));
+        if (si.compile(tu, &proj_Info) == ERROR_CODE)
+        {
+            error(F_BOLD "COMPILATION FAILED");
+        }
+        else
+        {
+            printf("\033[F\'%s\'" F_GREEN F_BOLD " SUCCESS\n" F_RESET, tu.cpp_File.c_str());
+        }
+    }
+    else
+    {
+        printf(F_YELLOW F_BOLD " UP TO DATE\n" F_RESET);
     }
 }
 
@@ -185,9 +211,23 @@ void CppBuilder::link(void)
 {
     std::filesystem::create_directories(std::filesystem::path(proj_Info.output_Path).parent_path());
     if (proj_Info.output_Type == APP)
-        si.link_App(&proj_Info);
+    {
+        printf(F_BOLD "Creating application \'%s\'\n" F_RESET, proj_Info.output_Path.c_str());
+        if(si.link_App(&proj_Info) == ERROR_CODE) {
+            error(F_BOLD "Creation of \'%s\' failed" F_RESET, proj_Info.output_Path.c_str());
+        } else {
+            printf(F_BOLD "\033[FCreating application \'%s\'" F_GREEN F_BOLD " SUCCESS\n\n" F_RESET, proj_Info.output_Path.c_str());
+        }
+    }
     else
-        si.link_Lib(&proj_Info);
+    {
+        printf(F_BOLD "Creating static library \'%s\'\n" F_RESET, proj_Info.output_Path.c_str());
+        if(si.link_Lib(&proj_Info) == ERROR_CODE) {
+            error(F_BOLD "Creation of \'%s\' failed" F_RESET, proj_Info.output_Path.c_str());
+        } else {
+            printf(F_BOLD "\033[FCreating static library \'%s\'" F_GREEN F_BOLD " SUCCESS\n\n" F_RESET, proj_Info.output_Path.c_str());
+        }
+    }
 }
 
 // This function

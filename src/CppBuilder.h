@@ -17,6 +17,8 @@ struct CppBuilder {
 
     void build(void);
 
+    void print_Project_Info(void);
+
     void setup(void);
 
 private:

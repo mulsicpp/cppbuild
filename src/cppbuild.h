@@ -33,24 +33,24 @@
 #endif
 
 //colors
-#define C_RESET "\033[0m"
+#define F_RESET "\033[0m"
 
-#define BLACK "\033[0;30m"
-#define RED "\033[0;31m"
-#define GREEN "\033[0;32m"
-#define YELLOW "\033[0;33m"
-#define BLUE "\033[0;34m"
-#define PURPLE "\033[0;35m"
-#define CYAN "\033[0;36m"
-#define WHITE "\033[0;37m"
-#define BOLD "\033[1m"
+#define F_BLACK "\033[0;30m"
+#define F_RED "\033[0;31m"
+#define F_GREEN "\033[0;32m"
+#define F_YELLOW "\033[0;33m"
+#define F_BLUE "\033[0;34m"
+#define F_PURPLE "\033[0;35m"
+#define F_CYAN "\033[0;36m"
+#define F_WHITE "\033[0;37m"
+#define F_BOLD "\033[1m"
 
 template <class... T>
 void error(const char *str, T... args)
 {
-  printf(RED);
+  printf(F_RED);
   printf(str, args...);
-  printf("\n" C_RESET);
+  printf("\n" F_RESET);
   exit(1);
 }
 
@@ -59,12 +59,12 @@ void msg(const char *format, const char *str, T... args)
 {
   printf(format);
   printf(str, args...);
-  printf("\n" C_RESET);
+  printf("\n" F_RESET);
 }
 
 #define NEW_LINE printf("\n");
 
-#define UPDATED_CODE 0x1
+#define SUCCESS_CODE 0x1
 #define ERROR_CODE 0x2
 
 #define MAX_ARG_COUNT 100

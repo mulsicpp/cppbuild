@@ -166,7 +166,7 @@ int SystemInterface::compile(TranslationUnit tu, ProjectInfo *p_Proj_Info)
 
     p_Proj_Info->header_Dependencies[tu.cpp_File] = headers;
 
-    return win_pclose(&out, &pi) == 0 ? UPDATED_CODE : ERROR_CODE;
+    return win_pclose(&out, &pi) == 0 ? SUCCESS_CODE : ERROR_CODE;
 #elif defined(__linux__)
     FILE *pipe = popen(("g++ -march=x86-64 " + std::string(p_Proj_Info->arch == X86 ? "-m32 " : "-m64 ") + p_Proj_Info->comp_Flags + "-c -H -o \"" + tu.o_File + "\" \"" + tu.cpp_File + "\" 2>&1").c_str(), "r");
 
@@ -220,7 +220,7 @@ int SystemInterface::compile(TranslationUnit tu, ProjectInfo *p_Proj_Info)
 
     p_Proj_Info->header_Dependencies[tu.cpp_File] = headers;
 
-    return pclose(pipe) == 0 ? UPDATED_CODE : ERROR_CODE;
+    return pclose(pipe) == 0 ? SUCCESS_CODE : ERROR_CODE;
 #endif
 }
 
@@ -238,8 +238,6 @@ int SystemInterface::link_App(ProjectInfo *p_Proj_Info)
     FILE *pipe = win_popen(((p_Proj_Info->arch == X64 ? compiler64 : compiler32) + "\\link.exe").c_str(), (char *)(" /out:\"" + p_Proj_Info->output_Path + "\" " + o_Files + p_Proj_Info->libs + p_Proj_Info->link_Flags + (p_Proj_Info->arch == X64 ? system_Lib64_Paths : system_Lib32_Paths)).c_str(), &out, &pi);
 #elif defined(__linux__)
     FILE *pipe = popen(("g++ -march=x86-64 " + std::string(p_Proj_Info->arch == X86 ? "-m32 " : "-m64 ") + "-o \"" + p_Proj_Info->output_Path + "\" " + o_Files + p_Proj_Info->link_Flags + +" " + p_Proj_Info->libs + " 2>&1").c_str(), "r");
-
-    printf("running g++...\n");
 #endif
     if (!pipe)
     {
@@ -254,9 +252,9 @@ int SystemInterface::link_App(ProjectInfo *p_Proj_Info)
     while (fgets(buffer, 1024, pipe))
         printf("%s", buffer);
 #if defined(_WIN32)
-    return win_pclose(&out, &pi) == 0 ? UPDATED_CODE : ERROR_CODE;
+    return win_pclose(&out, &pi) == 0 ? SUCCESS_CODE : ERROR_CODE;
 #elif defined(__linux__)
-    return pclose(pipe) == 0 ? UPDATED_CODE : ERROR_CODE;
+    return pclose(pipe) == 0 ? SUCCESS_CODE : ERROR_CODE;
 #endif
 }
 
@@ -269,12 +267,9 @@ int SystemInterface::link_Lib(ProjectInfo *p_Proj_Info)
 #if defined(_WIN32)
     HANDLE out;
     PROCESS_INFORMATION pi;
-    printf("\"%s\"\n", p_Proj_Info->output_Path.c_str());
     FILE *pipe = win_popen(((p_Proj_Info->arch == X64 ? compiler64 : compiler32) + "\\lib.exe").c_str(), (char *)(" /out:\"" + p_Proj_Info->output_Path + "\" " + o_Files).c_str(), &out, &pi);
 #elif defined(__linux__)
     FILE *pipe = popen(("ar rcs \"" + p_Proj_Info->output_Path + "\" " + o_Files + " 2>&1").c_str(), "r");
-
-    printf("running g++...\n");
 #endif
     if (!pipe)
     {
@@ -289,9 +284,9 @@ int SystemInterface::link_Lib(ProjectInfo *p_Proj_Info)
     while (fgets(buffer, 1024, pipe))
         printf("%s", buffer);
 #if defined(_WIN32)
-    return win_pclose(&out, &pi) == 0 ? UPDATED_CODE : ERROR_CODE;
+    return win_pclose(&out, &pi) == 0 ? SUCCESS_CODE : ERROR_CODE;
 #elif defined(__linux__)
-    return pclose(pipe) == 0 ? UPDATED_CODE : ERROR_CODE;
+    return pclose(pipe) == 0 ? SUCCESS_CODE : ERROR_CODE;
 #endif
 }
 
@@ -307,7 +302,7 @@ int SystemInterface::execute_Program(const char *prog, const char *args)
 #endif
     if (!pipe)
     {
-        printf(RED "error : process wasn't able to run\n" C_RESET);
+        printf(F_RED "error : process wasn't able to run\n" F_RESET);
         exit(-1);
     }
 
