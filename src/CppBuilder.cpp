@@ -147,7 +147,7 @@ void CppBuilder::build(void)
         printf(F_CYAN F_BOLD "Building dependency \'%s\'\n", dep.c_str());
         int ret = si.execute_Program(cppbuild_Path.c_str(), ("--path=\"" + dep + "\" --arch=" + (proj_Info.arch == X64 ? "x64" : "x86") + " --config=" + (proj_Info.config == RELEASE ? "release" : "debug") + (force ? " --force" : "")).c_str());
         if(ret == ERROR_CODE) {
-            printf(F_YELLOW "WARNING: Build of dependecy \'%s\'\n" F_RESET, dep);
+            printf(F_YELLOW "WARNING: Build of dependecy \'%s\'\n" F_RESET, dep.c_str());
         }
     }
 
@@ -160,7 +160,7 @@ void CppBuilder::build(void)
     proj_Info.save_Header_Dependencies();
     if (run && proj_Info.output_Type == APP)
     {
-        printf(F_BOLD "Running \'%s\' ...\n" F_RESET, proj_Info.output_Path.c_str());
+        printf(F_BOLD "Running \'%s\' ..." F_RESET "\n", proj_Info.output_Path.c_str());
         int ret = si.execute_Program(proj_Info.output_Path.c_str(), NULL);
         printf(F_BOLD "Application terminated with %i\n" F_RESET, ret);
     }

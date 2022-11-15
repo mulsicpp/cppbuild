@@ -7,8 +7,9 @@
 #include "math/random_useless.h"
 
 int main(void) {
-    printf("X blablabla");
-    printf("\b\b\b\b\b\b\b\b\b\b\b");
-    printf("Y\n");
+    char buffer[1024];
+    printf("Please input something: ");
+    fgets(buffer, 1024, stdin);
+    printf("Thanks\n");
     return 0;
 }

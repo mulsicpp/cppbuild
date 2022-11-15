@@ -294,23 +294,41 @@ int SystemInterface::execute_Program(const char *prog, const char *args)
 {
     char buffer[1024];
 #if defined(_WIN32)
-    HANDLE out;
+    STARTUPINFOA si;
     PROCESS_INFORMATION pi;
-    FILE *pipe = win_popen(prog, (char *)args, &out, &pi);
-#elif defined(__linux__)
-    FILE *pipe = popen(("\'" + std::string(prog) + "\' " + std::string(args == NULL ? "" : args)).c_str(), "r");
-#endif
-    if (!pipe)
-    {
-        printf(F_RED "error : process wasn't able to run\n" F_RESET);
-        exit(-1);
-    }
 
-    while (fgets(buffer, 1024, pipe))
-        printf("%s", buffer);
-#if defined(_WIN32)
-    return win_pclose(&out, &pi);
+    ZeroMemory(&pi, sizeof(PROCESS_INFORMATION));
+    ZeroMemory(&si, sizeof(STARTUPINFOA));
+
+    int bSuccess = CreateProcessA(prog,
+                                  (char *)args, // command line
+                                  NULL,         // process security attributes
+                                  NULL,         // primary thread security attributes
+                                  TRUE,         // handles are inherited
+                                  0,            // creation flags
+                                  NULL,         // use parent's environment
+                                  NULL,         // use parent's current directory
+                                  &si,          // STARTUPINFO pointer
+                                  &pi);         // receives PROCESS_INFORMATION
+
+    if (bSuccess)
+    {
+        // Wait for the process to exit
+        WaitForSingleObject(pi.hProcess, INFINITE);
+
+        // Process has exited - check its exit code
+        DWORD exitCode;
+        GetExitCodeProcess(pi.hProcess, &exitCode);
+
+        // At this point exitCode is set to the process' exit code
+
+        // Handles must be closed when they are no longer needed
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+
+        return exitCode;
+    }
 #elif defined(__linux__)
-    return pclose(pipe);
+    return system(("\'" + std::string(prog) + "\' " + std::string(args == NULL ? "" : args)).c_str());
 #endif
 }
