@@ -166,7 +166,7 @@ int SystemInterface::compile(TranslationUnit tu, ProjectInfo *p_Proj_Info)
 
     p_Proj_Info->header_Dependencies[tu.cpp_File] = headers;
 
-    return win_pclose(&out, &pi) == 0 ? SUCCESS_CODE : ERROR_CODE;
+    return win_pclose(&out, &pi) == 0 ? UPDATED_CODE : ERROR_CODE;
 #elif defined(__linux__)
     FILE *pipe = popen(("g++ -march=x86-64 " + std::string(p_Proj_Info->arch == X86 ? "-m32 " : "-m64 ") + p_Proj_Info->comp_Flags + "-c -H -o \"" + tu.o_File + "\" \"" + tu.cpp_File + "\" 2>&1").c_str(), "r");
 
@@ -220,7 +220,7 @@ int SystemInterface::compile(TranslationUnit tu, ProjectInfo *p_Proj_Info)
 
     p_Proj_Info->header_Dependencies[tu.cpp_File] = headers;
 
-    return pclose(pipe) == 0 ? SUCCESS_CODE : ERROR_CODE;
+    return pclose(pipe) == 0 ? UPDATED_CODE : ERROR_CODE;
 #endif
 }
 
@@ -252,9 +252,9 @@ int SystemInterface::link_App(ProjectInfo *p_Proj_Info)
     while (fgets(buffer, 1024, pipe))
         printf("%s", buffer);
 #if defined(_WIN32)
-    return win_pclose(&out, &pi) == 0 ? SUCCESS_CODE : ERROR_CODE;
+    return win_pclose(&out, &pi) == 0 ? UPDATED_CODE : ERROR_CODE;
 #elif defined(__linux__)
-    return pclose(pipe) == 0 ? SUCCESS_CODE : ERROR_CODE;
+    return pclose(pipe) == 0 ? UPDATED_CODE : ERROR_CODE;
 #endif
 }
 
@@ -284,9 +284,9 @@ int SystemInterface::link_Lib(ProjectInfo *p_Proj_Info)
     while (fgets(buffer, 1024, pipe))
         printf("%s", buffer);
 #if defined(_WIN32)
-    return win_pclose(&out, &pi) == 0 ? SUCCESS_CODE : ERROR_CODE;
+    return win_pclose(&out, &pi) == 0 ? UPDATED_CODE : ERROR_CODE;
 #elif defined(__linux__)
-    return pclose(pipe) == 0 ? SUCCESS_CODE : ERROR_CODE;
+    return pclose(pipe) == 0 ? UPDATED_CODE : ERROR_CODE;
 #endif
 }
 

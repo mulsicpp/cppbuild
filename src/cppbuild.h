@@ -64,7 +64,7 @@ void msg(const char *format, const char *str, T... args)
 
 #define NEW_LINE printf("\n");
 
-#define SUCCESS_CODE 0x1
+#define UPDATED_CODE 0x1
 #define ERROR_CODE 0x2
 
 #define MAX_ARG_COUNT 100

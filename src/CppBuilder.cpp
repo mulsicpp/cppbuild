@@ -144,7 +144,7 @@ void CppBuilder::build(void)
 
     for (const auto &dep : proj_Info.dependencies)
     {
-        printf(F_CYAN F_BOLD "Building dependency \'%s\'\n", dep);
+        printf(F_CYAN F_BOLD "Building dependency \'%s\'\n", dep.c_str());
         int ret = si.execute_Program(cppbuild_Path.c_str(), ("--path=\"" + dep + "\" --arch=" + (proj_Info.arch == X64 ? "x64" : "x86") + " --config=" + (proj_Info.config == RELEASE ? "release" : "debug") + (force ? " --force" : "")).c_str());
         if(ret == ERROR_CODE) {
             printf(F_YELLOW "WARNING: Build of dependecy \'%s\'\n" F_RESET, dep);
