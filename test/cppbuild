@@ -1,7 +1,7 @@
 let type ?= "app"
 let type ?= "lib"
 
-let command = "require \"../test_lib\""
+let command = "msg \"../test_lib\""
 
 output ${type} out/${_platform}_${_arch}_${_config}/$app(test)
 
@@ -11,7 +11,9 @@ std c++17
 
 incpath ../test_lib
 
-# require ../test_lib
+require ../test_lib
+
+cmd cppbuild --path=test_lib
 
 $[command]
 
