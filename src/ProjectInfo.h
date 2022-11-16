@@ -47,7 +47,7 @@ struct ProjectInfo {
 private:
     std::string resolve_Arg(std::string line, int line_Index);
 
-    std::string execute_Script_Line(std::string line, int line_Index);
+    void execute_Script_Line(std::string line, int line_Index);
 
     static void format_Line(int *argc, char **argv, char *line);
 

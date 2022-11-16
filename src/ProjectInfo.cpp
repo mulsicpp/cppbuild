@@ -65,13 +65,6 @@ void ProjectInfo::init(void)
             trim(line);
             if (line.at(0) == '#')
                 continue;
-            else if (line.at(0) == '!')
-            {
-                line = line.substr(1);
-                trim(line);
-                if ((line = execute_Script_Line(line, i + 1)).size() == 0)
-                    continue;
-            }
 
             strcpy(line_cstr, line.c_str());
             format_Line(&argc, argv, line_cstr);
@@ -107,7 +100,7 @@ std::string ProjectInfo::resolve_Arg(std::string arg, int line_Index)
     return arg;
 }
 
-std::string ProjectInfo::execute_Script_Line(std::string line, int line_Index)
+void ProjectInfo::execute_Script_Line(std::string line, int line_Index)
 {
     char buffer[MAX_LINE_LENGTH];
     strcpy(buffer, line.c_str());
@@ -155,7 +148,7 @@ std::string ProjectInfo::execute_Script_Line(std::string line, int line_Index)
             if (strcmp(argv[2], "=") == 0)
             {
                 if (variables.find(argv[1]) != variables.end())
-                    if(variables[argv[1]].is_Const)
+                    if (variables[argv[1]].is_Const)
                         error("(LINE: %i) ERROR: Cannot overwrite constant variable \'%s\'", line_Index, argv[1]);
                     else
                         error("(LINE: %i) ERROR: Cannot redefine variable \'%s\' as const", line_Index, argv[1]);
@@ -168,7 +161,6 @@ std::string ProjectInfo::execute_Script_Line(std::string line, int line_Index)
             }
         }
     }
-    return "";
 }
 
 void ProjectInfo::format_Line(int *argc, char **argv, char *line)
@@ -214,8 +206,68 @@ void ProjectInfo::format_Line(int *argc, char **argv, char *line)
 
 void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int line_Index)
 {
-    if (args[0] == "output")
+
+    if (args[0] == "let")
     {
+        if (argc != 4)
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'let\'", line_Index);
+        auto data = args[1].data();
+        for (int i = 0; data[i] != 0; i++)
+        {
+            char c = data[i];
+            if ((c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '_')
+                error("(LINE: %i) SYNTAX ERROR: Variable name \'%s\' is invalid. Must contain alpha-numeric characters", line_Index, args[1]);
+        }
+        if (args[2] == "=")
+        {
+            if (variables.find(args[1]) != variables.end())
+                if (!variables[args[1]].is_Const)
+                    variables[args[1]].value = args[3];
+                else
+                    error("(LINE: %i) ERROR: Cannot overwrite constant variable \'%s\'", line_Index, args[1]);
+            else
+                variables[args[1]] = {args[3], false};
+        }
+        else if (args[2] == "?=")
+        {
+            if (variables.find(args[1]) == variables.end())
+                variables[args[1]] = {args[3], false};
+        }
+        else
+        {
+            error("(LINE: %i) SYNTAX ERROR: Unexpected token \'%s\'. Should be \'=\' or \'?=\'", line_Index, args[2]);
+        }
+    }
+    else if (args[0] == "const")
+    {
+        if (argc != 4)
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'let\'", line_Index);
+        auto data = args[1].data();
+        for (int i = 0; data[i] != 0; i++)
+        {
+            char c = data[i];
+            if ((c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '_')
+                error("(LINE: %i) SYNTAX ERROR: Variable name \'%s\' is invalid. Must contain alpha-numeric characters", line_Index, args[1]);
+        }
+        if (args[2] == "=")
+        {
+            if (variables.find(args[1]) != variables.end())
+                if (variables[args[1]].is_Const)
+                    error("(LINE: %i) ERROR: Cannot overwrite constant variable \'%s\'", line_Index, args[1]);
+                else
+                    error("(LINE: %i) ERROR: Cannot redefine variable \'%s\' as const", line_Index, args[1]);
+            else
+                variables[args[1]] = {args[3], true};
+        }
+        else
+        {
+            error("(LINE: %i) SYNTAX ERROR: Unexpected token \'%s\'. Should be \'=\' or \'?=\'", line_Index, args[2]);
+        }
+    }
+    else if (args[0] == "output")
+    {
+        if (argc != 3)
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'output\'", line_Index);
         if (args[1] == "app")
         {
             output_Type = APP;
@@ -235,51 +287,79 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
     }
     else if (args[0] == "ignore")
     {
+        if (argc < 2)
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'ignore\'", line_Index);
+        for (int j = 1; j < argc; j++)
+        {
 #if defined(_WIN32)
-        std::replace(args[1].begin(), args[1].end(), '/', '\\');
+            std::replace(args[j].begin(), args[j].end(), '/', '\\');
 #endif
-        for (int i = 0; i < files.size();)
-            if (files[i].cpp_File == args[1])
-            {
-                files.erase(files.begin() + i);
-            }
-            else
-                i++;
+            for (int i = 0; i < files.size();)
+                if (files[i].cpp_File == args[j])
+                {
+                    files.erase(files.begin() + i);
+                }
+                else
+                    i++;
+        }
     }
     else if (args[0] == "incpath")
     {
-        comp_Flags += OS_INCLUDE_PATH(args[1]);
-        include_Paths.push_back(args[1]);
+        if (argc < 2)
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'incpath\'", line_Index);
+        for (int i = 1; i < argc; i++)
+        {
+            comp_Flags += OS_INCLUDE_PATH(args[1]);
+            include_Paths.push_back(args[1]);
+        }
     }
     else if (args[0] == "lib")
     {
-        libs += args[1] + " ";
+        if (argc < 2)
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'lib\'", line_Index);
+        for (int i = 1; i < argc; i++)
+            libs += args[i] + " ";
     }
     else if (args[0] == "linklib")
     {
-        link_Flags += OS_LINK_LIBRARY(args[1]);
+        if (argc < 2)
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'linklib\'", line_Index);
+        for (int i = 1; i < argc; i++)
+            link_Flags += OS_LINK_LIBRARY(args[i]);
     }
     else if (args[0] == "libpath")
     {
-        link_Flags += OS_LIBRARY_PATH(args[1]);
+        if (argc < 2)
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'libpath\'", line_Index);
+        for (int i = 1; i < argc; i++)
+            link_Flags += OS_LIBRARY_PATH(args[i]);
     }
     else if (args[0] == "define")
     {
         if (argc == 2)
             comp_Flags += OS_DEFINE(args[1]);
-        else
+        else if (argc == 3)
         {
             args[2] = std::regex_replace(args[2], std::regex("\""), "\\\"");
             comp_Flags += OS_MACRO(args[1], args[2]);
         }
+        else
+        {
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'define\'", line_Index);
+        }
     }
     else if (args[0] == "std")
     {
+        if (argc != 2)
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'std\'", line_Index);
         comp_Flags += OS_STD(args[1]);
     }
     else if (args[0] == "require")
     {
-        dependencies.push_back(args[1]);
+        if (argc < 2)
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'require\'", line_Index);
+        for (int i = 1; i < argc; i++)
+            dependencies.push_back(args[i]);
     }
     else
     {
