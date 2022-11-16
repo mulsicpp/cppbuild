@@ -10,6 +10,9 @@
 #include <filesystem>
 #include <sstream>
 
+#define CONDITION_FLAG 0x1
+#define IF_FLAG 0x2
+
 const static std::regex APP_FUNC_REG("\\$app\\(([^\\(\\)\\[\\]]*)\\)");
 const static std::regex LIB_FUNC_REG("\\$lib\\(([^\\(\\)\\[\\]]*)\\)");
 const static std::regex DLL_FUNC_REG("\\$dll\\(([^\\(\\)\\[\\]]*)\\)");
@@ -58,6 +61,8 @@ void ProjectInfo::init(void)
     char *argv[MAX_ARG_COUNT];
     std::string args[MAX_ARG_COUNT];
 
+    std::vector<uint8_t> if_Stack;
+
     for (int i = 0; std::getline(in, line); i++)
     {
         if (!std::regex_match(line, _EMPTY_LINE_REG))
@@ -66,14 +71,50 @@ void ProjectInfo::init(void)
             if (line.at(0) == '#')
                 continue;
 
+            line = resolve_Line(line, i + 1);
+
             strcpy(line_cstr, line.c_str());
             format_Line(&argc, argv, line_cstr);
-            for (int i = 0; i < argc; i++)
-                args[i] = resolve_Arg(argv[i], i + 1);
+            for (int j = 0; j < argc; j++)
+                args[j] = resolve_Arg(argv[j], i + 1);
 
             execute_Line(argc, args, i + 1);
         }
     }
+}
+
+std::string ProjectInfo::resolve_Line(std::string line, int line_Index)
+{
+    std::smatch matches;
+
+    while (std::regex_search(line.cbegin(), line.cend(), matches, std::regex("\\$\\[(\\w*)\\]")))
+    {
+        if (variables.find(matches[1].str()) != variables.end())
+        {
+            Value var = variables[matches[1].str()];
+            line = std::regex_replace(line, std::regex("\\$\\[" + matches[1].str() + "\\]"), var.value);
+        }
+        else
+        {
+            error("(LINE: %i) ERROR: Varibale '%s' doesn't exist", line_Index, matches[1].str().c_str());
+        }
+    }
+    
+    while (std::regex_search(line.cbegin(), line.cend(), matches, std::regex("\\[ *([^\\[\\]]*)  *(=|!=)  *([^\\[\\]]*)  *\\?  *([^\\[\\]]*)  *:  *([^\\[\\]]*)\\]")))
+    {
+        printf("matches count: %i\n", matches.size());
+        if (matches.size() == 6)
+        {
+            std::string arg1 = matches[1].str(), op = matches[2].str(), arg2 = matches[3].str(), if_Block = matches[4].str(), else_Block = matches[5].str();
+            if(op == "=" ? arg1 == arg2 : arg1 != arg2) {
+                line = std::regex_replace(line, std::regex("\\[ *" + arg1 + "  *" + op + "  *" + arg2 + "  *\\?  *" + if_Block + "  *:  *" + else_Block + "\\]"), if_Block);
+            } else {
+                line = std::regex_replace(line, std::regex("\\[ *" + arg1 + "  *" + op + "  *" + arg2 + "  *\\?  *" + if_Block + "  *:  *" + else_Block + "\\]"), else_Block);
+            }
+        }
+    }
+
+    return line;
 }
 
 std::string ProjectInfo::resolve_Arg(std::string arg, int line_Index)
@@ -93,74 +134,25 @@ std::string ProjectInfo::resolve_Arg(std::string arg, int line_Index)
         }
     }
 
+    while (std::regex_search(arg.cbegin(), arg.cend(), matches, std::regex("\\{ *([^\\{\\}]*)  *(=|!=)  *([^\\{\\}]*)  *\\?  *([^\\{\\}]*)  *:  *([^\\{\\}]*)\\]")))
+    {
+        printf("matches count: %i\n", matches.size());
+        if (matches.size() == 6)
+        {
+            std::string arg1 = matches[1].str(), op = matches[2].str(), arg2 = matches[3].str(), if_Block = matches[4].str(), else_Block = matches[5].str();
+            if(op == "=" ? arg1 == arg2 : arg1 != arg2) {
+                arg = std::regex_replace(arg, std::regex("\\{ *" + arg1 + "  *" + op + "  *" + arg2 + "  *\\?  *" + if_Block + "  *:  *" + else_Block + "\\}"), if_Block);
+            } else {
+                arg = std::regex_replace(arg, std::regex("\\{ *" + arg1 + "  *" + op + "  *" + arg2 + "  *\\?  *" + if_Block + "  *:  *" + else_Block + "\\}"), else_Block);
+            }
+        }
+    }
+
     arg = std::regex_replace(arg, APP_FUNC_REG, OS_APP_FORMAT);
     arg = std::regex_replace(arg, LIB_FUNC_REG, OS_LIB_FORMAT);
     arg = std::regex_replace(arg, DLL_FUNC_REG, OS_DLL_FORMAT);
 
     return arg;
-}
-
-void ProjectInfo::execute_Script_Line(std::string line, int line_Index)
-{
-    char buffer[MAX_LINE_LENGTH];
-    strcpy(buffer, line.c_str());
-    int argc;
-    char *argv[MAX_ARG_COUNT];
-    format_Line(&argc, argv, buffer);
-    if (argc == 4)
-    {
-        if (strcmp(argv[0], "let") == 0)
-        {
-            for (int i = 0; argv[1][i] != 0; i++)
-            {
-                char c = argv[1][i];
-                if ((c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '_')
-                    error("(LINE: %i) SYNTAX ERROR: Variable name \'%s\' is invalid. Must contain alpha-numeric characters", line_Index, argv[1]);
-            }
-            if (strcmp(argv[2], "=") == 0)
-            {
-                if (variables.find(argv[1]) != variables.end())
-                    if (!variables[argv[1]].is_Const)
-                        variables[argv[1]].value = argv[3];
-                    else
-                        error("(LINE: %i) ERROR: Cannot overwrite constant variable \'%s\'", line_Index, argv[1]);
-                else
-                    variables[argv[1]] = {argv[3], false};
-            }
-            else if (strcmp(argv[2], "?=") == 0)
-            {
-                if (variables.find(argv[1]) == variables.end())
-                    variables[argv[1]] = {argv[3], false};
-            }
-            else
-            {
-                error("(LINE: %i) SYNTAX ERROR: Unexpected token \'%s\'. Should be \'=\' or \'?=\'", line_Index, argv[2]);
-            }
-        }
-        else if (strcmp(argv[0], "const") == 0)
-        {
-            for (int i = 0; argv[1][i] != 0; i++)
-            {
-                char c = argv[1][i];
-                if ((c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '_')
-                    error("(LINE: %i) SYNTAX ERROR: Variable name \'%s\' is invalid. Must contain alpha-numeric characters", line_Index, argv[1]);
-            }
-            if (strcmp(argv[2], "=") == 0)
-            {
-                if (variables.find(argv[1]) != variables.end())
-                    if (variables[argv[1]].is_Const)
-                        error("(LINE: %i) ERROR: Cannot overwrite constant variable \'%s\'", line_Index, argv[1]);
-                    else
-                        error("(LINE: %i) ERROR: Cannot redefine variable \'%s\' as const", line_Index, argv[1]);
-                else
-                    variables[argv[1]] = {argv[3], true};
-            }
-            else
-            {
-                error("(LINE: %i) SYNTAX ERROR: Unexpected token \'%s\'. Should be \'=\' or \'?=\'", line_Index, argv[2]);
-            }
-        }
-    }
 }
 
 void ProjectInfo::format_Line(int *argc, char **argv, char *line)

@@ -6,17 +6,20 @@
 #include <unordered_map>
 #include <vector>
 
-struct Value {
+struct Value
+{
     std::string value;
     bool is_Const;
 };
 
-struct TranslationUnit {
+struct TranslationUnit
+{
     std::string cpp_File;
     std::string o_File;
 };
 
-struct ProjectInfo {
+struct ProjectInfo
+{
     std::string output_Path;
     OutputType output_Type = NONE;
 
@@ -38,16 +41,15 @@ struct ProjectInfo {
     std::string bin_Dir_Name = "";
 
     void init(void);
-    
+
     void search_Source_Files(void);
 
     void load_Header_Dependencies(void);
     void save_Header_Dependencies(void);
-    
-private:
-    std::string resolve_Arg(std::string line, int line_Index);
 
-    void execute_Script_Line(std::string line, int line_Index);
+private:
+    std::string resolve_Line(std::string line, int line_Index);
+    std::string resolve_Arg(std::string line, int line_Index);
 
     static void format_Line(int *argc, char **argv, char *line);
 
