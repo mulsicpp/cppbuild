@@ -32,7 +32,7 @@ static std::string &trim(std::string &str)
 void ProjectInfo::init(void)
 {
     // set build constants
-    variables["_platform"] = { OS_NAME, true};
+    variables["_platform"] = {OS_NAME, true};
     variables["_arch"] = {arch == X64 ? "x64" : "x86", true};
     variables["_config"] = {config == RELEASE ? "release" : "debug", true};
 
@@ -65,19 +65,25 @@ void ProjectInfo::init(void)
             trim(line);
             if (line.at(0) == '#')
                 continue;
+            else if (line.at(0) == '!')
+            {
+                line = line.substr(1);
+                trim(line);
+                if ((line = execute_Script_Line(line, i + 1)).size() == 0)
+                    continue;
+            }
 
             strcpy(line_cstr, line.c_str());
             format_Line(&argc, argv, line_cstr);
             for (int i = 0; i < argc; i++)
-                args[i] = resolve_Arg(argv[i]);
+                args[i] = resolve_Arg(argv[i], i + 1);
 
             execute_Line(argc, args, i + 1);
         }
     }
-
 }
 
-std::string ProjectInfo::resolve_Arg(std::string arg)
+std::string ProjectInfo::resolve_Arg(std::string arg, int line_Index)
 {
     std::smatch matches;
 
@@ -90,7 +96,7 @@ std::string ProjectInfo::resolve_Arg(std::string arg)
         }
         else
         {
-            error("varibale '%s' doesn't exist", matches[1].str().c_str());
+            error("(LINE: %i) ERROR: Varibale '%s' doesn't exist", line_Index, matches[1].str().c_str());
         }
     }
 
@@ -99,6 +105,70 @@ std::string ProjectInfo::resolve_Arg(std::string arg)
     arg = std::regex_replace(arg, DLL_FUNC_REG, OS_DLL_FORMAT);
 
     return arg;
+}
+
+std::string ProjectInfo::execute_Script_Line(std::string line, int line_Index)
+{
+    char buffer[MAX_LINE_LENGTH];
+    strcpy(buffer, line.c_str());
+    int argc;
+    char *argv[MAX_ARG_COUNT];
+    format_Line(&argc, argv, buffer);
+    if (argc == 4)
+    {
+        if (strcmp(argv[0], "let") == 0)
+        {
+            for (int i = 0; argv[1][i] != 0; i++)
+            {
+                char c = argv[1][i];
+                if ((c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '_')
+                    error("(LINE: %i) SYNTAX ERROR: Variable name \'%s\' is invalid. Must contain alpha-numeric characters", line_Index, argv[1]);
+            }
+            if (strcmp(argv[2], "=") == 0)
+            {
+                if (variables.find(argv[1]) != variables.end())
+                    if (!variables[argv[1]].is_Const)
+                        variables[argv[1]].value = argv[3];
+                    else
+                        error("(LINE: %i) ERROR: Cannot overwrite constant variable \'%s\'", line_Index, argv[1]);
+                else
+                    variables[argv[1]] = {argv[3], false};
+            }
+            else if (strcmp(argv[2], "?=") == 0)
+            {
+                if (variables.find(argv[1]) == variables.end())
+                    variables[argv[1]] = {argv[3], false};
+            }
+            else
+            {
+                error("(LINE: %i) SYNTAX ERROR: Unexpected token \'%s\'. Should be \'=\' or \'?=\'", line_Index, argv[2]);
+            }
+        }
+        else if (strcmp(argv[0], "const") == 0)
+        {
+            for (int i = 0; argv[1][i] != 0; i++)
+            {
+                char c = argv[1][i];
+                if ((c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '_')
+                    error("(LINE: %i) SYNTAX ERROR: Variable name \'%s\' is invalid. Must contain alpha-numeric characters", line_Index, argv[1]);
+            }
+            if (strcmp(argv[2], "=") == 0)
+            {
+                if (variables.find(argv[1]) != variables.end())
+                    if(variables[argv[1]].is_Const)
+                        error("(LINE: %i) ERROR: Cannot overwrite constant variable \'%s\'", line_Index, argv[1]);
+                    else
+                        error("(LINE: %i) ERROR: Cannot redefine variable \'%s\' as const", line_Index, argv[1]);
+                else
+                    variables[argv[1]] = {argv[3], true};
+            }
+            else
+            {
+                error("(LINE: %i) SYNTAX ERROR: Unexpected token \'%s\'. Should be \'=\' or \'?=\'", line_Index, argv[2]);
+            }
+        }
+    }
+    return "";
 }
 
 void ProjectInfo::format_Line(int *argc, char **argv, char *line)
@@ -156,7 +226,7 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
         }
         else
         {
-            error("SYNTAX ERROR in line %i: \'%s\' is not allowed as first argument for \'output\'. Has to be \'app\' or \'lib\'", line_Index, args[1].c_str());
+            error("(LINE: %i) SYNTAX ERROR: \'%s\' is not allowed as first argument for \'output\'. Has to be \'app\' or \'lib\'", line_Index, args[1].c_str());
         }
 #if defined(_WIN32)
         std::replace(args[2].begin(), args[2].end(), '/', '\\');
@@ -198,7 +268,10 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
         if (argc == 2)
             comp_Flags += OS_DEFINE(args[1]);
         else
+        {
+            args[2] = std::regex_replace(args[2], std::regex("\""), "\\\"");
             comp_Flags += OS_MACRO(args[1], args[2]);
+        }
     }
     else if (args[0] == "std")
     {
@@ -207,6 +280,10 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
     else if (args[0] == "require")
     {
         dependencies.push_back(args[1]);
+    }
+    else
+    {
+        error("(LINE: %i) SYNTAX ERROR: Unrecognized command \'%s\'", line_Index, args[0].c_str());
     }
 }
 

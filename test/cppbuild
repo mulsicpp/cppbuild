@@ -1,6 +1,8 @@
-output app out/${_platform}_${_arch}_${_config}/$app(test)
+! let type = "app"
+! let type ?= "lib"
+output ${type} out/${_platform}_${_arch}_${_config}/$app(test)
 
-define LOL "haha"
+define LOL "\"haha\""
 
 std c++17
 
@@ -9,3 +11,5 @@ incpath ../test_lib
 require ../test_lib
 
 lib ../test_lib/lib/${_platform}_${_arch}_${_config}/$lib(test)
+
+![${_platform} = win32 ? ${_win32_default_libs}]
