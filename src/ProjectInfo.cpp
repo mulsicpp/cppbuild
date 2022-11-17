@@ -76,10 +76,39 @@ void ProjectInfo::init(void)
 
             strcpy(line_cstr, line.c_str());
             format_Line(&argc, argv, line_cstr);
+            if (if_Stack.size() > 0) {
+                if (((if_Stack.back() & IF_FLAG) != 0) && strcmp(argv[0], "else") == 0)
+                {
+                    if(argc != 1)
+                        error("(LINE: %s) SYNTAX ERROR: \'else\' doesn't take any arguments");
+                    if_Stack.back() &= ~IF_FLAG;
+                    continue;
+                } else if(strcmp(argv[0], "endif") == 0) {
+                    if(argc != 1)
+                        error("(LINE: %s) SYNTAX ERROR: \'endif\' doesn't take any arguments");
+                    if_Stack.pop_back();
+                    continue;
+                } else if(if_Stack.back() & CONDITION_FLAG == 0)
+                    continue;
+            }
             for (int j = 0; j < argc; j++)
                 args[j] = resolve_Arg(argv[j], i + 1);
 
-            execute_Line(argc, args, i + 1);
+            if (args[0] == "if")
+            {
+                if (argc != 4)
+                    error("(LINE: %s) SYNTAX ERROR: Invalid if-statement. Has to look like: if <arg1> <operator> <arg2>");
+
+                if (args[2] == "=")
+                    if_Stack.push_back(IF_FLAG | (args[1] == args[3] ? CONDITION_FLAG : 0));
+                else if (args[2] == "!=")
+                    if_Stack.push_back(IF_FLAG | (args[1] != args[3] ? CONDITION_FLAG : 0));
+                else
+                    error("(LINE: %s) SYNTAX ERROR: Invalid operator \'%s\'. Only \'=\' and \'!=\' are allowed");
+                continue;
+            }
+            if (if_Stack.size() == 0 || if_Stack.back() == 0 || if_Stack.back() == (IF_FLAG | CONDITION_FLAG))
+                execute_Line(argc, args, i + 1);
         }
     }
 }

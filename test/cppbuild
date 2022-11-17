@@ -19,6 +19,20 @@ $[command]
 
 lib ../test_lib/lib/${_platform}_${_arch}_${_config}/$lib(test)
 
-# if ${_platform} = win32 msg "Hello Windows"
-# else msg "Hello Linux"
-# endif
+if ${_platform} = win32
+    msg "Hello Windows"
+    if ${_config} = debug
+        msg schlecht
+    else
+        msg guat
+    endif
+else
+    msg "Hello Linux"
+    if ${_config} = debug
+        msg schlecht
+    else
+        msg guat
+    endif
+endif
+
+msg "lol"
