@@ -337,8 +337,8 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
             error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'incpath\'", line_Index);
         for (int i = 1; i < argc; i++)
         {
-            comp_Flags += OS_INCLUDE_PATH(args[1]);
-            include_Paths.push_back(args[1]);
+            comp_Flags += OS_INCLUDE_PATH(args[i]);
+            include_Paths.push_back(args[i]);
         }
     }
     else if (args[0] == "lib")
