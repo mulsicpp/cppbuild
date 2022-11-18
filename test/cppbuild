@@ -35,4 +35,4 @@ else
     endif
 endif
 
-msg "lol"
+[ 1 != 2 ? msg lol]

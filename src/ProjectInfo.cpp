@@ -74,21 +74,29 @@ void ProjectInfo::init(void)
 
             line = resolve_Line(line, i + 1);
 
+            trim(line);
+            if (line.length() == 0)
+                continue;
+
             strcpy(line_cstr, line.c_str());
             format_Line(&argc, argv, line_cstr);
-            if (if_Stack.size() > 0) {
+            if (if_Stack.size() > 0)
+            {
                 if (((if_Stack.back() & IF_FLAG) != 0) && strcmp(argv[0], "else") == 0)
                 {
-                    if(argc != 1)
+                    if (argc != 1)
                         error("(LINE: %s) SYNTAX ERROR: \'else\' doesn't take any arguments");
                     if_Stack.back() &= ~IF_FLAG;
                     continue;
-                } else if(strcmp(argv[0], "endif") == 0) {
-                    if(argc != 1)
+                }
+                else if (strcmp(argv[0], "endif") == 0)
+                {
+                    if (argc != 1)
                         error("(LINE: %s) SYNTAX ERROR: \'endif\' doesn't take any arguments");
                     if_Stack.pop_back();
                     continue;
-                } else if(if_Stack.back() & CONDITION_FLAG == 0)
+                }
+                else if (if_Stack.back() & CONDITION_FLAG == 0)
                     continue;
             }
             for (int j = 0; j < argc; j++)
@@ -113,6 +121,8 @@ void ProjectInfo::init(void)
     }
 }
 
+#define REG_ARG(x, y) "([^\\" x "\\" y "]*?)"
+
 std::string ProjectInfo::resolve_Line(std::string line, int line_Index)
 {
     std::smatch matches;
@@ -130,19 +140,18 @@ std::string ProjectInfo::resolve_Line(std::string line, int line_Index)
         }
     }
 
-    while (std::regex_search(line.cbegin(), line.cend(), matches, std::regex("\\[ *([^\\[\\]]*)  *(=|!=)  *([^\\[\\]]*)  *\\?  *([^\\[\\]]*)  *:  *([^\\[\\]]*)\\]")))
+    while (std::regex_search(line.cbegin(), line.cend(), matches, std::regex("\\[ *" REG_ARG("[", "]") "  *(=|!=)  *" REG_ARG("[", "]") "  *\\?  *" REG_ARG("[", "]") " *(?: :  *" REG_ARG("[", "]") ")? *\\]")))
     {
-        printf("matches count: %i\n", matches.size());
         if (matches.size() == 6)
         {
             std::string arg1 = matches[1].str(), op = matches[2].str(), arg2 = matches[3].str(), if_Block = matches[4].str(), else_Block = matches[5].str();
             if (op == "=" ? arg1 == arg2 : arg1 != arg2)
             {
-                line = std::regex_replace(line, std::regex("\\[ *" + arg1 + "  *" + op + "  *" + arg2 + "  *\\?  *" + if_Block + "  *:  *" + else_Block + "\\]"), if_Block);
+                line = std::regex_replace(line, std::regex("\\[ *" + arg1 + "  *" + op + "  *" + arg2 + "  *\\?  *" + if_Block + " *" + (matches[5].matched ? " :  *" + else_Block : "") + "\\]"), if_Block);
             }
             else
             {
-                line = std::regex_replace(line, std::regex("\\[ *" + arg1 + "  *" + op + "  *" + arg2 + "  *\\?  *" + if_Block + "  *:  *" + else_Block + "\\]"), else_Block);
+                line = std::regex_replace(line, std::regex("\\[ *" + arg1 + "  *" + op + "  *" + arg2 + "  *\\?  *" + if_Block + " *" + (matches[5].matched ? " :  *" + else_Block : "") + "\\]"), else_Block);
             }
         }
     }
@@ -164,23 +173,6 @@ std::string ProjectInfo::resolve_Arg(std::string arg, int line_Index)
         else
         {
             error("(LINE: %i) ERROR: Varibale '%s' doesn't exist", line_Index, matches[1].str().c_str());
-        }
-    }
-
-    while (std::regex_search(arg.cbegin(), arg.cend(), matches, std::regex("\\{ *([^\\{\\}]*)  *(=|!=)  *([^\\{\\}]*)  *\\?  *([^\\{\\}]*)  *:  *([^\\{\\}]*)\\]")))
-    {
-        printf("matches count: %i\n", matches.size());
-        if (matches.size() == 6)
-        {
-            std::string arg1 = matches[1].str(), op = matches[2].str(), arg2 = matches[3].str(), if_Block = matches[4].str(), else_Block = matches[5].str();
-            if (op == "=" ? arg1 == arg2 : arg1 != arg2)
-            {
-                arg = std::regex_replace(arg, std::regex("\\{ *" + arg1 + "  *" + op + "  *" + arg2 + "  *\\?  *" + if_Block + "  *:  *" + else_Block + "\\}"), if_Block);
-            }
-            else
-            {
-                arg = std::regex_replace(arg, std::regex("\\{ *" + arg1 + "  *" + op + "  *" + arg2 + "  *\\?  *" + if_Block + "  *:  *" + else_Block + "\\}"), else_Block);
-            }
         }
     }
 
