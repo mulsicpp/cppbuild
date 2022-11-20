@@ -381,27 +381,6 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
         for (int i = 1; i < argc; i++)
             dependencies.push_back(args[i]);
     }
-    else if (args[0] == "msg")
-    {
-        if (argc != 2)
-            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'msg\'", line_Index);
-        printf("%s\n", args[1].c_str());
-    }
-    else if (args[0] == "cmd")
-    {
-        if (argc == 3)
-        {
-            int ret = SystemInterface().execute_Program(args[1].c_str(), args[2].c_str());
-            printf("Command \'%s %s\' returned with %i\n", args[1].c_str(), args[2].c_str(), ret);
-        }
-        else if (argc == 2)
-        {
-            int ret = SystemInterface().execute_Program(args[1].c_str(), NULL);
-            printf("Command \'%s\' returned with %i\n", args[1].c_str(), ret);
-        }
-        else
-            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'cmd\'", line_Index);
-    }
     else
     {
         error("(LINE: %i) SYNTAX ERROR: Unrecognized command \'%s\'", line_Index, args[0].c_str());
