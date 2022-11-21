@@ -379,7 +379,16 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
         if (argc < 2)
             error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'require\'", line_Index);
         for (int i = 1; i < argc; i++)
-            dependencies.push_back(args[i]);
+            commands.push_back({EXEC_DEP, {args[i]}});
+    }
+    else if (args[0] == "execute")
+    {
+        if (argc == 2)
+            commands.push_back({EXEC_CMD, {args[1], NULL}});
+        else if (argc == 3)
+            commands.push_back({EXEC_CMD, {args[1], args[2]}});
+        else
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'execute\'", line_Index);
     }
     else
     {

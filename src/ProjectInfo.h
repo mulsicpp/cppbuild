@@ -18,6 +18,15 @@ struct TranslationUnit
     std::string o_File;
 };
 
+#define EXEC_DEP 0
+#define EXEC_CMD 1
+
+struct Command
+{
+    uint8_t type;
+    std::string data[2];
+};
+
 struct ProjectInfo
 {
     std::string output_Path;
@@ -36,7 +45,7 @@ struct ProjectInfo
     std::vector<TranslationUnit> files;
     std::unordered_map<std::string, std::vector<std::string>> header_Dependencies;
 
-    std::vector<std::string> dependencies;
+    std::vector<Command> commands;
 
     std::string bin_Dir_Name = "";
 

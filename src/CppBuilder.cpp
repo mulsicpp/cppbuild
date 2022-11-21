@@ -142,12 +142,31 @@ void CppBuilder::build(void)
     cppbuild_Path = (std::filesystem::path(path_To_Exe) / "cppbuild").string();
 #endif
 
-    for (const auto &dep : proj_Info.dependencies)
+    for (const auto &cmd : proj_Info.commands)
     {
-        printf(F_CYAN F_BOLD "Building dependency \'%s\'\n", dep.c_str());
-        int ret = si.execute_Program(cppbuild_Path.c_str(), ("--path=\"" + dep + "\" --arch=" + (proj_Info.arch == X64 ? "x64" : "x86") + " --config=" + (proj_Info.config == RELEASE ? "release" : "debug") + (force ? " --force" : "")).c_str());
-        if(ret == ERROR_CODE) {
-            printf(F_YELLOW "WARNING: Build of dependecy \'%s\'\n" F_RESET, dep.c_str());
+        if (cmd.type == EXEC_DEP)
+        {
+            printf(F_CYAN F_BOLD "Building dependency \'%s\'\n", cmd.data[0].c_str());
+            int ret = si.execute_Program(cppbuild_Path.c_str(), ("--path=\"" + cmd.data[0] + "\" --arch=" + (proj_Info.arch == X64 ? "x64" : "x86") + " --config=" + (proj_Info.config == RELEASE ? "release" : "debug") + (force ? " --force" : "")).c_str());
+            if (ret != 0)
+            {
+                printf(F_YELLOW "WARNING: Build of dependecy \'%s\'\n" F_RESET, cmd.data[0].c_str());
+            }
+        }
+        else
+        {
+            if (cmd.data[1].size() == 0)
+            {
+                printf(F_CYAN F_BOLD "Running \'%s\'\n", cmd.data[0].c_str());
+                int ret = si.execute_Program(cmd.data[0].c_str(), NULL);
+                printf(F_CYAN F_BOLD "Process returned with %i\n" F_RESET, ret);
+            }
+            else
+            {
+                printf(F_CYAN F_BOLD "Running \'%s\' with arguments \'%s\'\n", cmd.data[0].c_str(), cmd.data[1].c_str());
+                int ret = si.execute_Program(cmd.data[0].c_str(), cmd.data[1].c_str());
+                printf(F_CYAN F_BOLD "Process returned with %i\n" F_RESET, ret);
+            }
         }
     }
 
@@ -213,18 +232,24 @@ void CppBuilder::link(void)
     if (proj_Info.output_Type == APP)
     {
         printf(F_BOLD "Creating application \'%s\'\n" F_RESET, proj_Info.output_Path.c_str());
-        if(si.link_App(&proj_Info) == ERROR_CODE) {
+        if (si.link_App(&proj_Info) == ERROR_CODE)
+        {
             error(F_BOLD "Creation of \'%s\' failed" F_RESET, proj_Info.output_Path.c_str());
-        } else {
+        }
+        else
+        {
             printf(F_BOLD "\033[FCreating application \'%s\'" F_GREEN F_BOLD " SUCCESS\n\n" F_RESET, proj_Info.output_Path.c_str());
         }
     }
     else
     {
         printf(F_BOLD "Creating static library \'%s\'\n" F_RESET, proj_Info.output_Path.c_str());
-        if(si.link_Lib(&proj_Info) == ERROR_CODE) {
+        if (si.link_Lib(&proj_Info) == ERROR_CODE)
+        {
             error(F_BOLD "Creation of \'%s\' failed" F_RESET, proj_Info.output_Path.c_str());
-        } else {
+        }
+        else
+        {
             printf(F_BOLD "\033[FCreating static library \'%s\'" F_GREEN F_BOLD " SUCCESS\n\n" F_RESET, proj_Info.output_Path.c_str());
         }
     }
