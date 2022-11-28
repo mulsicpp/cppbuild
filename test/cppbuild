@@ -3,6 +3,8 @@ let type ?= "lib"
 
 output ${type} out/${_platform}_${_arch}_${_config}/$app(test)
 
+src src
+
 define LOL "\"haha\""
 
 std c++17

@@ -49,7 +49,7 @@ void ProjectInfo::init(void)
     SetFileAttributesA(".cppbuild", attributes | FILE_ATTRIBUTE_HIDDEN);
 #endif
 
-    search_Source_Files();
+    //search_Source_Files();
     load_Header_Dependencies();
 
     // open build file
@@ -304,6 +304,40 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
         std::replace(args[2].begin(), args[2].end(), '/', '\\');
 #endif
         output_Path = args[2];
+    }
+    else if (args[0] == "src")
+    {
+        if (argc < 2)
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'src\'", line_Index);
+        for (int j = 1; j < argc; j++)
+        {
+#if defined(_WIN32)
+            std::replace(args[j].begin(), args[j].end(), '/', '\\');
+#endif
+            if (std::filesystem::exists(args[j]))
+            {
+                if (std::filesystem::is_directory(args[j]))
+                {
+                    for (const auto &entry : std::filesystem::recursive_directory_iterator(args[j]))
+                    {
+                        if (entry.is_regular_file() && (entry.path().extension() == ".cpp" || entry.path().extension() == ".c"))
+                        {
+                            TranslationUnit u;
+                            u.cpp_File = std::filesystem::proximate(entry.path()).string();
+                            u.o_File = (std::filesystem::path(".cppbuild" OS_DIR_SEPARATOR + bin_Dir_Name) / std::filesystem::path(u.cpp_File).replace_extension(".o")).string();
+                            files.push_back(u);
+                        }
+                    }
+                }
+                else if (std::filesystem::path(args[j]).extension() == ".cpp" || std::filesystem::path(args[j]).extension() == ".c")
+                {
+                    TranslationUnit u;
+                    u.cpp_File = std::filesystem::proximate(std::filesystem::path(args[j])).string();
+                    u.o_File = (std::filesystem::path(".cppbuild" OS_DIR_SEPARATOR + bin_Dir_Name) / std::filesystem::path(u.cpp_File).replace_extension(".o")).string();
+                    files.push_back(u);
+                }
+            }
+        }
     }
     else if (args[0] == "ignore")
     {
