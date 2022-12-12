@@ -5,7 +5,7 @@ output ${type} out/${_platform}_${_arch}_${_config}/$app(test)
 
 src src
 
-define LOL "\"haha\""
+[${_config} = debug ? define TEST_DEBUG]
 
 std c++17
 

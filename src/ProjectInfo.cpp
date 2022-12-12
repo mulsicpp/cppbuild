@@ -121,7 +121,7 @@ void ProjectInfo::init(void)
     }
 }
 
-#define REG_ARG(x, y) "([^\\" x "\\" y "]*?)"
+#define REG_ARG "([^\\.\\+\\*\\?\\^\\$\\(\\)\\[\\]\\{\\}\\|\\\\]*?)"
 
 std::string ProjectInfo::resolve_Line(std::string line, int line_Index)
 {
@@ -140,7 +140,7 @@ std::string ProjectInfo::resolve_Line(std::string line, int line_Index)
         }
     }
 
-    while (std::regex_search(line.cbegin(), line.cend(), matches, std::regex("\\[ *" REG_ARG("[", "]") "  *(=|!=)  *" REG_ARG("[", "]") "  *\\?  *" REG_ARG("[", "]") " *(?: :  *" REG_ARG("[", "]") ")? *\\]")))
+    while (std::regex_search(line.cbegin(), line.cend(), matches, std::regex("\\[ *" REG_ARG "  *(=|!=)  *" REG_ARG "  *\\?  *" REG_ARG " *(?: :  *" REG_ARG ")? *\\]")))
     {
         if (matches.size() == 6)
         {

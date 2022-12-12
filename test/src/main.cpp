@@ -11,5 +11,8 @@ int main(void) {
     printf("Please input something: ");
     fgets(buffer, 1024, stdin);
     printf("Thanks\n");
+#if defined(TEST_DEBUG)
+    printf("debug\n");
+#endif
     return 0;
 }
