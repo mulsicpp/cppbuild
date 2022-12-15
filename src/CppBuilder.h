@@ -6,7 +6,7 @@
 #include "SystemInterface.h"
 
 struct CppBuilder {
-    std::string path_To_Exe, path_To_Project;
+    std::string path_To_Exe, path_To_Project, path_To_Buildfile;
 
     bool run, force, update_Needed;
 

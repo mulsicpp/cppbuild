@@ -49,7 +49,7 @@ struct ProjectInfo
 
     std::string bin_Dir_Name = "";
 
-    void init(void);
+    void init(const std::string& build_File);
 
     void search_Source_Files(void);
 

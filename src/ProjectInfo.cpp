@@ -33,7 +33,7 @@ static std::string &trim(std::string &str)
     return str;
 }
 
-void ProjectInfo::init(void)
+void ProjectInfo::init(const std::string& build_File)
 {
     // set build constants
     variables["_platform"] = {OS_NAME, true};
@@ -53,7 +53,7 @@ void ProjectInfo::init(void)
     load_Header_Dependencies();
 
     // open build file
-    std::ifstream in("cppbuild");
+    std::ifstream in(build_File);
 
     std::string line;
     char line_cstr[MAX_LINE_LENGTH];

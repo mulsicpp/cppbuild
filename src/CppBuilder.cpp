@@ -19,6 +19,8 @@
 #define MOD_TIME std::filesystem::last_write_time
 #define EXISTS std::filesystem::exists
 
+#define CPPBUILD_FILE_EXT ".cbld"
+
 // the constructer requires the arguments in the command line. From there it takes care of everything.
 CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false), update_Needed(false)
 {
@@ -45,9 +47,7 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false), updat
         else if (strlen(argv[i]) >= 7 && memcmp(argv[i], "--path=", 7) == 0)
         {
             if (!std::filesystem::exists(argv[i] + 7))
-                error("ERROR: Project path does not exist");
-            else if (!std::filesystem::is_directory(argv[i] + 7))
-                error("ERROR: Project path is not a directory");
+                error("ERROR: Path \'%s\' does not exist", argv[i] + 7);
             else
                 path_To_Project = std::filesystem::canonical(std::filesystem::path(argv[i] + 7)).string();
         }
@@ -82,14 +82,30 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false), updat
             error("SYNTAX ERROR: Unrecognized flag %s", argv[i]);
     }
 
-    if (!std::filesystem::exists(std::filesystem::path(path_To_Project) += "/cppbuild") || !std::filesystem::is_regular_file(std::filesystem::path(path_To_Project) += "/cppbuild"))
-        error("ERROR: \'cppbuild\' file not present in project");
+    if (!std::filesystem::exists(std::filesystem::path(path_To_Project)))
+        error("ERROR: The path \'%s\' does not exist", path_To_Project.c_str());
+
+    if(std::filesystem::is_directory(path_To_Project)) {
+        path_To_Buildfile = "";
+        auto iterator = std::filesystem::directory_iterator(path_To_Project);
+        for(const auto& entry : iterator)
+            if(entry.path().extension() == CPPBUILD_FILE_EXT) {
+                path_To_Buildfile = std::filesystem::canonical(entry.path()).string();
+            }
+        if(path_To_Buildfile.length() == 0)
+            error("ERROR: No build file found in project");
+    } else if(std::filesystem::path(path_To_Project).extension() == CPPBUILD_FILE_EXT){
+        path_To_Buildfile = path_To_Project;
+        path_To_Project = std::filesystem::canonical(std::filesystem::path(path_To_Buildfile).parent_path()).string();
+    } else {
+        error("ERROR: The specified file \'%s\' is not a build file", path_To_Project.c_str());
+    }
 
     std::filesystem::current_path(path_To_Project);
 
-    proj_Info.init();
+    proj_Info.init(path_To_Buildfile);
 
-    if (!EXISTS(proj_Info.output_Path) || MOD_TIME("cppbuild") > MOD_TIME(proj_Info.output_Path))
+    if (!EXISTS(proj_Info.output_Path) || MOD_TIME(path_To_Buildfile) > MOD_TIME(proj_Info.output_Path))
         update_Needed = true;
 
     std::filesystem::current_path(path_To_Exe);
@@ -150,7 +166,7 @@ void CppBuilder::build(void)
             int ret = si.execute_Program(cppbuild_Path.c_str(), ("--path=\"" + cmd.data[0] + "\" --arch=" + (proj_Info.arch == X64 ? "x64" : "x86") + " --config=" + (proj_Info.config == RELEASE ? "release" : "debug") + (force ? " --force" : "")).c_str());
             if (ret != 0)
             {
-                printf(F_YELLOW "WARNING: Build of dependecy \'%s\'\n" F_RESET, cmd.data[0].c_str());
+                printf(F_YELLOW "WARNING: Build of dependecy \'%s\' failed\n\n" F_RESET, cmd.data[0].c_str());
             }
         }
         else
