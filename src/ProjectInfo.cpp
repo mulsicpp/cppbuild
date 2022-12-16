@@ -40,7 +40,7 @@ void ProjectInfo::init(const std::string& build_File)
     variables["_arch"] = {arch == X64 ? "x64" : "x86", true};
     variables["_config"] = {config == RELEASE ? "release" : "debug", true};
 
-    bin_Dir_Name = std::string(OS_NAME) + (arch == X64 ? "_x64" : "_x86") + (config == RELEASE ? "_release" : "_debug");
+    bin_Dir_Name = std::filesystem::path(build_File).stem().string() + "_" + OS_NAME + (arch == X64 ? "_x64" : "_x86") + (config == RELEASE ? "_release" : "_debug");
 
     if (!std::filesystem::exists(".cppbuild"))
         std::filesystem::create_directory(".cppbuild");
