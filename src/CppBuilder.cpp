@@ -85,19 +85,25 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false), updat
     if (!std::filesystem::exists(std::filesystem::path(path_To_Project)))
         error("ERROR: The path \'%s\' does not exist", path_To_Project.c_str());
 
-    if(std::filesystem::is_directory(path_To_Project)) {
+    if (std::filesystem::is_directory(path_To_Project))
+    {
         path_To_Buildfile = "";
         auto iterator = std::filesystem::directory_iterator(path_To_Project);
-        for(const auto& entry : iterator)
-            if(entry.path().extension() == CPPBUILD_FILE_EXT) {
+        for (const auto &entry : iterator)
+            if (entry.path().extension() == CPPBUILD_FILE_EXT)
+            {
                 path_To_Buildfile = std::filesystem::canonical(entry.path()).string();
             }
-        if(path_To_Buildfile.length() == 0)
+        if (path_To_Buildfile.length() == 0)
             error("ERROR: No build file found in project");
-    } else if(std::filesystem::path(path_To_Project).extension() == CPPBUILD_FILE_EXT){
+    }
+    else if (std::filesystem::path(path_To_Project).extension() == CPPBUILD_FILE_EXT)
+    {
         path_To_Buildfile = path_To_Project;
         path_To_Project = std::filesystem::canonical(std::filesystem::path(path_To_Buildfile).parent_path()).string();
-    } else {
+    }
+    else
+    {
         error("ERROR: The specified file \'%s\' is not a build file", path_To_Project.c_str());
     }
 
@@ -193,6 +199,40 @@ void CppBuilder::build(void)
 
     link();
     proj_Info.save_Header_Dependencies();
+    for (const auto &exportf : proj_Info.exportfs)
+    {
+        if (exportf.type == FILE_EXPORT)
+        {
+            if (EXISTS(exportf.dst_Path))
+                std::filesystem::remove_all(exportf.dst_Path);
+            
+            if (EXISTS(exportf.src_Path)){
+                std::filesystem::copy(exportf.src_Path, exportf.dst_Path);
+                printf(F_CYAN "Exported \'%s\' to \'%s\'\n" F_RESET, exportf.src_Path.c_str(), exportf.dst_Path.c_str());
+            }else
+                printf(F_YELLOW "WARNING: Could not export file \'%s\', because it does not exist\n" F_RESET, exportf.src_Path.c_str());
+        } else if (exportf.type == HEADERS_EXPORT)
+        {
+            if (EXISTS(exportf.dst_Path))
+                std::filesystem::remove_all(exportf.dst_Path);
+            
+            if (!EXISTS(exportf.src_Path))
+                printf(F_YELLOW "WARNING: Could not export headers, because the folder \'%s\' does not exist\n" F_RESET, exportf.src_Path.c_str());
+            if (!std::filesystem::is_directory(exportf.src_Path))
+                printf(F_YELLOW "WARNING: Could not export headers, because \'%s\' is not a folder\n" F_RESET, exportf.src_Path.c_str());
+            auto iterator = std::filesystem::recursive_directory_iterator(exportf.src_Path);
+            for(const auto& entry : iterator) {
+                if(entry.is_regular_file() && (entry.path().extension() == ".h" || entry.path().extension() == ".hpp")){
+                    auto dst_File = std::filesystem::path(exportf.dst_Path) / std::filesystem::proximate(entry.path(), exportf.src_Path).parent_path();
+                    std::filesystem::create_directories(dst_File);
+                    std::filesystem::copy(entry.path(), std::filesystem::canonical(dst_File) / entry.path().filename());
+                }
+            }
+            printf(F_CYAN "Exported headers from \'%s\' to \'%s\'\n" F_RESET, exportf.src_Path.c_str(), exportf.dst_Path.c_str());
+        }
+    }
+    if(proj_Info.exportfs.size() > 0)
+        printf("\n");
     if (run && proj_Info.output_Type == APP)
     {
         printf(F_BOLD "Running \'%s\' ..." F_RESET "\n", proj_Info.output_Path.c_str());

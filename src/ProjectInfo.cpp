@@ -424,6 +424,25 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
         else
             error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'execute\'", line_Index);
     }
+    else if (args[0] == "exportc")
+    {
+        if (argc < 2)
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'exportc\'", line_Index);
+        for (int i = 1; i < argc; i++)
+            exportcs.push_back(args[i] + "\n");
+    }
+    else if (args[0] == "exportf")
+    {
+        if (argc != 4)
+            error("(LINE: %i) SYNTAX ERROR: Invalid number of arguments for command \'exportf\'", line_Index);
+        if(args[1] == "file") {
+            exportfs.push_back({FILE_EXPORT, args[2], args[3]});
+        } else if(args[1] == "headers") {
+            exportfs.push_back({HEADERS_EXPORT, args[2], args[3]});
+        } else {
+            error("(LINE: %i) SYNTAX ERROR: Invalid type \'%s\' for command \'exportf\'", line_Index, args[1].c_str());
+        }
+    }
     else
     {
         error("(LINE: %i) SYNTAX ERROR: Unrecognized command \'%s\'", line_Index, args[0].c_str());

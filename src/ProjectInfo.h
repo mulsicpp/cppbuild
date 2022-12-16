@@ -27,6 +27,17 @@ struct Command
     std::string data[2];
 };
 
+enum ExportType {
+    FILE_EXPORT,
+    HEADERS_EXPORT
+};
+
+struct Export {
+    ExportType type;
+    std::string src_Path;
+    std::string dst_Path;
+};
+
 struct ProjectInfo
 {
     std::string output_Path;
@@ -46,6 +57,8 @@ struct ProjectInfo
     std::unordered_map<std::string, std::vector<std::string>> header_Dependencies;
 
     std::vector<Command> commands;
+    std::vector<std::string> exportcs;
+    std::vector<Export> exportfs;
 
     std::string bin_Dir_Name = "";
 
