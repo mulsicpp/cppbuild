@@ -9,8 +9,4 @@ src src
 
 std c++17
 
-incpath ../test_lib
-
 require ../test_lib
-
-lib ../test_lib/lib/${_platform}_${_arch}_${_config}/$lib(test)

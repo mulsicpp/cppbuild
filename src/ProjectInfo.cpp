@@ -20,7 +20,47 @@ const static std::regex DLL_FUNC_REG("\\$dll\\(([^\\(\\)\\[\\]]*)\\)");
 
 const static std::regex _EMPTY_LINE_REG("^[ \\r\\n\\t]*$");
 
-static std::string &trim(std::string &str)
+
+void format_Line(int *argc, char **argv, char *line)
+{
+
+    size_t str_Length = strlen(line);
+
+    bool ignore = false;
+
+    for (int i = 0; i < str_Length; i++)
+    {
+        if (!ignore && (line[i] == ' ' || line[i] == '\n' || line[i] == '\t' || line[i] == '\r'))
+            line[i] = 0;
+        else if (line[i] == '\"')
+        {
+            ignore = !ignore;
+            line[i] = 0;
+        }
+        else if (line[i] == '\\')
+        {
+            memcpy(line + i, line + i + 1, str_Length - i);
+        }
+    }
+    *argc = 0;
+
+    if (str_Length > 0 && line[0] != 0)
+    {
+        argv[0] = line;
+        (*argc)++;
+    }
+
+    for (int i = 1; i < str_Length && *argc < MAX_ARG_COUNT; i++)
+    {
+        if (line[i] != 0 && line[i - 1] == 0)
+        {
+            argv[*argc] = line + i;
+            (*argc)++;
+        }
+    }
+}
+
+std::string &trim(std::string &str)
 {
     str.erase(str.begin(), std::find_if(str.begin(), str.end(), [](unsigned char ch)
                                         { return !std::isspace(ch); }));
@@ -119,6 +159,8 @@ void ProjectInfo::init(const std::string& build_File)
                 execute_Line(argc, args, i + 1);
         }
     }
+
+    in.close();
 }
 
 #define REG_ARG "([^\\.\\+\\*\\?\\^\\$\\(\\)\\[\\]\\{\\}\\|\\\\]*?)"
@@ -181,45 +223,6 @@ std::string ProjectInfo::resolve_Arg(std::string arg, int line_Index)
     arg = std::regex_replace(arg, DLL_FUNC_REG, OS_DLL_FORMAT);
 
     return arg;
-}
-
-void ProjectInfo::format_Line(int *argc, char **argv, char *line)
-{
-
-    size_t str_Length = strlen(line);
-
-    bool ignore = false;
-
-    for (int i = 0; i < str_Length; i++)
-    {
-        if (!ignore && (line[i] == ' ' || line[i] == '\n' || line[i] == '\t' || line[i] == '\r'))
-            line[i] = 0;
-        else if (line[i] == '\"')
-        {
-            ignore = !ignore;
-            line[i] = 0;
-        }
-        else if (line[i] == '\\')
-        {
-            memcpy(line + i, line + i + 1, str_Length - i);
-        }
-    }
-    *argc = 0;
-
-    if (str_Length > 0 && line[0] != 0)
-    {
-        argv[0] = line;
-        (*argc)++;
-    }
-
-    for (int i = 1; i < str_Length && *argc < MAX_ARG_COUNT; i++)
-    {
-        if (line[i] != 0 && line[i - 1] == 0)
-        {
-            argv[*argc] = line + i;
-            (*argc)++;
-        }
-    }
 }
 
 #define TEST_ARG(arg, val) if (strcmp(arg, val) == 0)
@@ -446,6 +449,45 @@ void ProjectInfo::execute_Line(int argc, std::string args[MAX_ARG_COUNT], int li
     else
     {
         error("(LINE: %i) SYNTAX ERROR: Unrecognized command \'%s\'", line_Index, args[0].c_str());
+    }
+}
+
+void ProjectInfo::execute_Exported_Line(int argc, std::string args[MAX_ARG_COUNT], int line_Index)
+{
+    if (args[0] == "incpath")
+    {
+        if (argc < 2)
+            error("(LINE: %i in exported command) SYNTAX ERROR: Invalid number of arguments for command \'incpath\'", line_Index);
+        for (int i = 1; i < argc; i++)
+        {
+            comp_Flags += OS_INCLUDE_PATH(args[i]);
+            include_Paths.push_back(args[i]);
+        }
+    }
+    else if (args[0] == "lib")
+    {
+        if (argc < 2)
+            error("(LINE: %i in exported command) SYNTAX ERROR: Invalid number of arguments for command \'lib\'", line_Index);
+        for (int i = 1; i < argc; i++)
+            libs += args[i] + " ";
+    }
+    else if (args[0] == "linklib")
+    {
+        if (argc < 2)
+            error("(LINE: %i in exported command) SYNTAX ERROR: Invalid number of arguments for command \'linklib\'", line_Index);
+        for (int i = 1; i < argc; i++)
+            link_Flags += OS_LINK_LIBRARY(args[i]);
+    }
+    else if (args[0] == "libpath")
+    {
+        if (argc < 2)
+            error("(LINE: %i in exported command) SYNTAX ERROR: Invalid number of arguments for command \'libpath\'", line_Index);
+        for (int i = 1; i < argc; i++)
+            link_Flags += OS_LIBRARY_PATH(args[i]);
+    }
+    else
+    {
+        error("(LINE: %i in exported command) SYNTAX ERROR: Unrecognized command \'%s\'", line_Index, args[0].c_str());
     }
 }
 

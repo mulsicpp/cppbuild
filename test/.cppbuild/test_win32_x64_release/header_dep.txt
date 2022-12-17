@@ -1,1 +1,1 @@
-src\main.cpp:..\test_lib\math\my_math.h;..\test_lib\math\random_useless.h;
+src\main.cpp:..\test_lib\include\math\my_math.h;..\test_lib\include\math\random_useless.h;

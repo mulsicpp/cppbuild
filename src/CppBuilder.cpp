@@ -12,6 +12,7 @@
 
 #include <filesystem>
 #include <exception>
+#include <fstream>
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
@@ -46,10 +47,25 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false), updat
             setup();
         else if (strlen(argv[i]) >= 7 && memcmp(argv[i], "--path=", 7) == 0)
         {
-            if (!std::filesystem::exists(argv[i] + 7))
-                error("ERROR: Path \'%s\' does not exist", argv[i] + 7);
+            std::filesystem::path path = argv[i] + 7;
+            if (!std::filesystem::exists(path))
+                error("ERROR: The directory or file \'%s\' does not exist", argv[i] + 7);
+            if (std::filesystem::is_directory(path))
+            {
+                path_To_Buildfile = (path / (path.filename().string() + CPPBUILD_FILE_EXT)).string();
+            }
             else
-                path_To_Project = std::filesystem::canonical(std::filesystem::path(argv[i] + 7)).string();
+            {
+                path_To_Buildfile = path.string();
+            }
+            if (!std::filesystem::exists(path_To_Buildfile))
+                error("ERROR: The build file \'%s\' does not exist", path_To_Buildfile.c_str());
+            if (!std::filesystem::is_regular_file(path_To_Buildfile))
+                error("ERROR: The build file \'%s\' is not a file", path_To_Buildfile.c_str());
+            if (std::filesystem::path(path_To_Buildfile).extension() != CPPBUILD_FILE_EXT)
+                error("ERROR: The build file \'%s\' has wrong extension", argv[i] + 7);
+            path_To_Buildfile = std::filesystem::canonical(path_To_Buildfile).string();
+            path_To_Project = std::filesystem::canonical(std::filesystem::path(path_To_Buildfile).parent_path()).string();
         }
         else if (strlen(argv[i]) == 10 && memcmp(argv[i], "--arch=", 7) == 0)
         {
@@ -84,28 +100,6 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false), updat
 
     if (!std::filesystem::exists(std::filesystem::path(path_To_Project)))
         error("ERROR: The path \'%s\' does not exist", path_To_Project.c_str());
-
-    if (std::filesystem::is_directory(path_To_Project))
-    {
-        path_To_Buildfile = "";
-        auto iterator = std::filesystem::directory_iterator(path_To_Project);
-        for (const auto &entry : iterator)
-            if (entry.path().extension() == CPPBUILD_FILE_EXT)
-            {
-                path_To_Buildfile = std::filesystem::canonical(entry.path()).string();
-            }
-        if (path_To_Buildfile.length() == 0)
-            error("ERROR: No build file found in project");
-    }
-    else if (std::filesystem::path(path_To_Project).extension() == CPPBUILD_FILE_EXT)
-    {
-        path_To_Buildfile = path_To_Project;
-        path_To_Project = std::filesystem::canonical(std::filesystem::path(path_To_Buildfile).parent_path()).string();
-    }
-    else
-    {
-        error("ERROR: The specified file \'%s\' is not a build file", path_To_Project.c_str());
-    }
 
     std::filesystem::current_path(path_To_Project);
 
@@ -147,7 +141,7 @@ CppBuilder::CppBuilder(int argc, char *argv[]) : run(false), force(false), updat
 
 void CppBuilder::print_Project_Info(void)
 {
-    printf(F_WHITE F_BOLD "Project:       " F_RESET "\'%s\'\n", path_To_Project.c_str());
+    printf(F_BLUE F_BOLD "Project:       " F_RESET F_BLUE "\'%s\'\n" F_RESET, path_To_Buildfile.c_str());
     printf(F_WHITE F_BOLD "Output:        " F_RESET "\'%s\' (%s)\n", proj_Info.output_Path.c_str(), proj_Info.output_Type == APP ? "Application" : (proj_Info.output_Type == LIB ? "Static Library" : "None"));
     printf(F_WHITE F_BOLD "Platform:      " F_RESET "%s\n", strcmp(OS_NAME, "win32") == 0 ? "Windows" : "Linux");
     printf(F_WHITE F_BOLD "Architecture:  " F_RESET "%s\n", proj_Info.arch == X64 ? "x64" : "x86");
@@ -174,6 +168,44 @@ void CppBuilder::build(void)
             {
                 printf(F_YELLOW "WARNING: Build of dependecy \'%s\' failed\n\n" F_RESET, cmd.data[0].c_str());
             }
+
+            std::filesystem::current_path(cmd.data[0]);
+
+            printf("%s\n", std::filesystem::current_path().string().c_str());
+
+            auto dep_Bin_Name = std::filesystem::path(cmd.data[0]).stem().string() + "_" + OS_NAME + (proj_Info.arch == X64 ? "_x64" : "_x86") + (proj_Info.config == RELEASE ? "_release" : "_debug");
+
+            std::ifstream in((std::filesystem::path(".cppbuild") / dep_Bin_Name / "exported_commands.txt").string());
+            printf("%s\n", (std::filesystem::path(".cppbuild") / dep_Bin_Name / "exported_commands.txt").string().c_str());
+
+            std::string line;
+            char line_cstr[MAX_LINE_LENGTH];
+
+            int argc;
+            char *argv[MAX_ARG_COUNT];
+            std::string args[MAX_ARG_COUNT];
+
+            for (int i = 0; std::getline(in, line); i++)
+            {
+                if (trim(line).length() > 0)
+                {
+                    line = trim(line);
+                    strcpy(line_cstr, line.c_str());
+                    printf("%s\n", line_cstr);
+                    format_Line(&argc, argv, line_cstr);
+                    if(argc > 0)
+                        args[0] = argv[0];
+                    for (int i = 1; i < argc; i++)
+                    {
+                        args[i] = std::filesystem::proximate(argv[i], path_To_Project).string();
+                    }
+                    proj_Info.execute_Exported_Line(argc, args, i + 1);
+                }
+            }
+
+            in.close();
+
+            std::filesystem::current_path(path_To_Project);
         }
         else
         {
@@ -205,24 +237,29 @@ void CppBuilder::build(void)
         {
             if (EXISTS(exportf.dst_Path))
                 std::filesystem::remove_all(exportf.dst_Path);
-            
-            if (EXISTS(exportf.src_Path)){
+
+            if (EXISTS(exportf.src_Path))
+            {
                 std::filesystem::copy(exportf.src_Path, exportf.dst_Path);
                 printf(F_CYAN "Exported \'%s\' to \'%s\'\n" F_RESET, exportf.src_Path.c_str(), exportf.dst_Path.c_str());
-            }else
+            }
+            else
                 printf(F_YELLOW "WARNING: Could not export file \'%s\', because it does not exist\n" F_RESET, exportf.src_Path.c_str());
-        } else if (exportf.type == HEADERS_EXPORT)
+        }
+        else if (exportf.type == HEADERS_EXPORT)
         {
             if (EXISTS(exportf.dst_Path))
                 std::filesystem::remove_all(exportf.dst_Path);
-            
+
             if (!EXISTS(exportf.src_Path))
                 printf(F_YELLOW "WARNING: Could not export headers, because the folder \'%s\' does not exist\n" F_RESET, exportf.src_Path.c_str());
             if (!std::filesystem::is_directory(exportf.src_Path))
                 printf(F_YELLOW "WARNING: Could not export headers, because \'%s\' is not a folder\n" F_RESET, exportf.src_Path.c_str());
             auto iterator = std::filesystem::recursive_directory_iterator(exportf.src_Path);
-            for(const auto& entry : iterator) {
-                if(entry.is_regular_file() && (entry.path().extension() == ".h" || entry.path().extension() == ".hpp")){
+            for (const auto &entry : iterator)
+            {
+                if (entry.is_regular_file() && (entry.path().extension() == ".h" || entry.path().extension() == ".hpp"))
+                {
                     auto dst_File = std::filesystem::path(exportf.dst_Path) / std::filesystem::proximate(entry.path(), exportf.src_Path).parent_path();
                     std::filesystem::create_directories(dst_File);
                     std::filesystem::copy(entry.path(), std::filesystem::canonical(dst_File) / entry.path().filename());
@@ -231,8 +268,21 @@ void CppBuilder::build(void)
             printf(F_CYAN "Exported headers from \'%s\' to \'%s\'\n" F_RESET, exportf.src_Path.c_str(), exportf.dst_Path.c_str());
         }
     }
-    if(proj_Info.exportfs.size() > 0)
+    if (proj_Info.exportfs.size() > 0)
         printf("\n");
+
+    if (EXISTS(".cppbuild/" + proj_Info.bin_Dir_Name + "/exported_commands.txt"))
+        std::filesystem::remove(".cppbuild/" + proj_Info.bin_Dir_Name + "/exported_commands.txt");
+
+    std::ofstream f(".cppbuild/" + proj_Info.bin_Dir_Name + "/exported_commands.txt");
+    std::replace(proj_Info.output_Path.begin(), proj_Info.output_Path.end(), '\\', '/');
+    if (proj_Info.output_Type == LIB)
+        f << "lib \"" << proj_Info.output_Path << "\"\n";
+    for (const auto &command : proj_Info.exportcs)
+    {
+        f << command;
+    }
+    f.close();
     if (run && proj_Info.output_Type == APP)
     {
         printf(F_BOLD "Running \'%s\' ..." F_RESET "\n", proj_Info.output_Path.c_str());

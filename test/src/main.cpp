@@ -1,18 +1,13 @@
-#if defined(_WIN32)
-#include "Windows.h"
-#endif
-
-#include <stdio.h>
 #include "math/my_math.h"
 #include "math/random_useless.h"
 
+auto lol() {
+    struct A { int x; int y; };
+    return A{1, 2};
+}
+
 int main(void) {
-    char buffer[1024];
-    printf("Please input something: ");
-    fgets(buffer, 1024, stdin);
-    printf("Thanks\n");
-#if defined(TEST_DEBUG)
-    printf("debug\n");
-#endif
+    add(1, 2);
+    auto[x, y] = lol();
     return 0;
 }

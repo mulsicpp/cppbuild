@@ -2,6 +2,7 @@ output lib lib/${_platform}_${_arch}_${_config}/$lib(test)
 
 std c++17
 
-exportf headers math include/math
-
 src math
+
+exportf headers math include/math
+exportc "incpath include"

@@ -38,6 +38,10 @@ struct Export {
     std::string dst_Path;
 };
 
+void format_Line(int *argc, char **argv, char *line);
+
+std::string &trim(std::string &str);
+
 struct ProjectInfo
 {
     std::string output_Path;
@@ -69,11 +73,12 @@ struct ProjectInfo
     void load_Header_Dependencies(void);
     void save_Header_Dependencies(void);
 
+    void execute_Exported_Line(int argc, std::string args[MAX_ARG_COUNT], int line_Index);
+
 private:
     std::string resolve_Line(std::string line, int line_Index);
     std::string resolve_Arg(std::string line, int line_Index);
 
-    static void format_Line(int *argc, char **argv, char *line);
 
     void execute_Line(int argc, std::string args[MAX_ARG_COUNT], int line_Index);
 };

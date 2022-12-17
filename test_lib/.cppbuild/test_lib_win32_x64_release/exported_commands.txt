@@ -1,0 +1,2 @@
+lib "lib/win32_x64_release/test.lib"
+incpath include
